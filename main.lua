@@ -1,11 +1,14 @@
 --- Entry point: wires world, camera, renderer and input together.
--- Usage: `love .` or `love . path/to/world.vox`
+-- Usage: `love . [path/to/world.vox] [--touch]`
+-- `--touch` shows the on-screen controls from the start (the web page passes it
+-- on touch-first devices); otherwise they appear on the first touch.
 
 local Blocks = require("src.blocks")
 local Camera = require("src.camera")
 local Config = require("src.config")
 local Raycast = require("src.raycast")
 local Renderer = require("src.renderer")
+local TouchControls = require("src.touch_controls")
 local Vec3 = require("src.math.vec3")
 local Vox = require("src.vox")
 local World = require("src.world")
@@ -13,6 +16,8 @@ local World = require("src.world")
 local world --- @type World
 local camera --- @type Camera
 local renderer --- @type Renderer
+local touch = TouchControls.new()
+local touchMode = false -- on-screen controls shown and the mouse left uncaptured
 
 --- Reads a file from the game directory, falling back to the OS filesystem
 -- so worlds outside the project can be passed on the command line.
@@ -74,15 +79,17 @@ local function setBlock(block, id)
     end
 end
 
-local function interact(button)
+--- Breaks or places a block at the crosshair.
+--- @param action TouchAction
+local function interact(action)
     local hit = Raycast.cast(isSolid, camera.position, camera:forward(), Config.reach)
     if not hit then
         return
     end
 
-    if button == Config.mouseButtons.breakBlock then
+    if action == "break" then
         setBlock(hit.block, Blocks.AIR)
-    elseif button == Config.mouseButtons.placeBlock then
+    elseif action == "place" then
         if hit.normal == Vec3.new(0, 0, 0) then
             return -- camera is inside a block; there is no face to build on
         end
@@ -102,39 +109,102 @@ local function drawCrosshair()
     love.graphics.setColor(1, 1, 1, 1)
 end
 
+--- Switches between on-screen touch controls and mouse capture.
+--- @param enabled boolean
+local function setTouchMode(enabled)
+    touchMode = enabled
+    if enabled then
+        love.mouse.setRelativeMode(false) -- a captured pointer would hide touches' positions
+    end
+end
+
 function love.load(args)
-    world = loadWorld(args[1] or Config.worldPath)
+    local worldPath = Config.worldPath
+    for _, value in ipairs(args) do
+        if value == "--touch" then
+            touchMode = true
+        else
+            worldPath = value
+        end
+    end
+    local system = love.system.getOS()
+    touchMode = touchMode or system == "Android" or system == "iOS"
+
+    world = loadWorld(worldPath)
     camera = spawnCamera()
     renderer = Renderer.new(world, { chunkSize = Config.chunkSize, textureDir = Config.textureDir })
     love.graphics.setBackgroundColor(Config.skyColor)
-    love.mouse.setRelativeMode(true)
+    love.mouse.setRelativeMode(not touchMode)
 end
 
 function love.update(dt)
     local keys = Config.keys
     local speed = Config.moveSpeed * (love.keyboard.isDown(keys.fast) and Config.fastMultiplier or 1)
-    camera:move(dt, axis(keys.forward, keys.back), axis(keys.right, keys.left), axis(keys.up, keys.down), speed)
+    local forward, right, up = axis(keys.forward, keys.back), axis(keys.right, keys.left), axis(keys.up, keys.down)
+    if touchMode then
+        touch:resize(love.graphics.getDimensions())
+        local touchForward, touchRight, touchUp = touch:movement()
+        forward, right, up = forward + touchForward, right + touchRight, up + touchUp
+        local lookX, lookY = touch:takeLook()
+        camera:rotate(-lookX * Config.touchLookSpeed, -lookY * Config.touchLookSpeed)
+        for _, action in ipairs(touch:takeActions()) do
+            interact(action)
+        end
+    end
+    camera:move(dt, forward, right, up, speed)
     renderer:update()
 end
 
 function love.draw()
     renderer:draw(camera:viewProjection(love.graphics.getWidth() / love.graphics.getHeight()))
     drawCrosshair()
+    if touchMode then
+        touch:draw()
+    end
 end
 
-function love.mousemoved(_, _, dx, dy)
-    if love.mouse.getRelativeMode() then
+function love.touchpressed(id, x, y)
+    if not touchMode then
+        setTouchMode(true)
+    end
+    touch:resize(love.graphics.getDimensions()) -- may arrive before the first update
+    touch:pressed(id, x, y)
+end
+
+function love.touchmoved(id, x, y, dx, dy)
+    touch:moved(id, x, y, dx, dy)
+end
+
+function love.touchreleased(id)
+    touch:released(id)
+end
+
+-- Touches also arrive as emulated mouse events (`istouch`); those are ignored
+-- here because the touch callbacks above already handle them.
+
+function love.mousemoved(_, _, dx, dy, istouch)
+    if not istouch and love.mouse.getRelativeMode() then
         local sensitivity = Config.mouseSensitivity
         camera:rotate(-dx * sensitivity, -dy * sensitivity)
     end
 end
 
-function love.mousepressed(_, _, button)
+function love.mousepressed(_, _, button, istouch)
+    if istouch then
+        return
+    end
+    if touchMode then
+        setTouchMode(false) -- a real mouse click switches back to mouse controls
+    end
     if not love.mouse.getRelativeMode() then
         love.mouse.setRelativeMode(true) -- first click after refocusing only recaptures the mouse
         return
     end
-    interact(button)
+    if button == Config.mouseButtons.breakBlock then
+        interact("break")
+    elseif button == Config.mouseButtons.placeBlock then
+        interact("place")
+    end
 end
 
 function love.keypressed(key)

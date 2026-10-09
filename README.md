@@ -8,6 +8,7 @@ Fly around a pre-built world, break blocks and place dirt. See [design.md](desig
 ```sh
 love .                         # loads assets/worlds/test.vox
 love . /path/to/world.vox      # loads any MagicaVoxel file
+love . --touch                 # starts with the on-screen touch controls
 ```
 
 | Input | Action |
@@ -19,6 +20,16 @@ love . /path/to/world.vox      # loads any MagicaVoxel file
 | Left click | Break block |
 | Right click | Place dirt |
 | Esc | Quit |
+
+On touch screens, on-screen controls appear automatically. They show from the start on Android, iOS, and phones or tablets
+in a browser, and otherwise appear on the first touch. A mouse click switches back.
+
+| Touch | Action |
+|---|---|
+| Drag on the left half | Move (joystick appears under your thumb) |
+| Drag on the right half | Look around |
+| Up / Down (hold) | Fly up / down |
+| Break / Place (tap) | Break block / place dirt at the crosshair |
 
 Edits live in memory only; the world file is never written.
 
@@ -81,6 +92,7 @@ every lua-language-server diagnostic enabled in `.luarc.json` is an error, and C
 | `src/camera.lua` | Free-flying camera |
 | `src/math/` | `Vec3` (positions, directions), `Extent3` (grid sizes), `Mat4` (matrices) |
 | `src/raycast.lua` | Voxel ray traversal for block picking |
+| `src/touch_controls.lua` | On-screen joystick, look area and buttons for touch screens |
 | `src/config.lua` | Tunables and key bindings |
 | `tools/` | Test-world generator, `.vox` writer, web build (`build_web.sh`, `web/index.html`) |
 

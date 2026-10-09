@@ -13,6 +13,7 @@ return {
     moveSpeed = 8,
     fastMultiplier = 3,
     mouseSensitivity = 0.0025,
+    touchLookSpeed = 3, -- radians per drag across the shorter screen side
     reach = 8,
 
     keys = {
