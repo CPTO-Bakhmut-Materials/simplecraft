@@ -3,6 +3,7 @@
 
 local Blocks = require("src.blocks")
 local Extent3 = require("src.math.extent3")
+local Vec3 = require("src.math.vec3")
 local VoxWriter = require("tools.vox_writer")
 
 local SIZE_X, SIZE_Y, SIZE_Z = 48, 48, 24
@@ -19,8 +20,7 @@ end
 
 local voxels = {}
 local function add(x, y, z, block)
-    local n = #voxels
-    voxels[n + 1], voxels[n + 2], voxels[n + 3], voxels[n + 4] = x, y, z, PALETTE_INDEX[block]
+    voxels[#voxels + 1] = { position = Vec3.new(x, y, z), colorIndex = PALETTE_INDEX[block] }
 end
 
 for x = 0, SIZE_X - 1 do
@@ -55,4 +55,4 @@ end
 local file = assert(io.open(OUTPUT, "wb"))
 file:write(VoxWriter.encode({ size = Extent3.new(SIZE_X, SIZE_Y, SIZE_Z), voxels = voxels }, palette))
 file:close()
-print(("wrote %s (%dx%dx%d, %d voxels)"):format(OUTPUT, SIZE_X, SIZE_Y, SIZE_Z, #voxels / 4))
+print(("wrote %s (%dx%dx%d, %d voxels)"):format(OUTPUT, SIZE_X, SIZE_Y, SIZE_Z, #voxels))

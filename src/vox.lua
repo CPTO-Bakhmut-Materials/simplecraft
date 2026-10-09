@@ -5,10 +5,13 @@
 -- RGBA. Scene graph, material and layer chunks are skipped. Pure Lua, no LÖVE
 -- dependency, so it can be unit tested outside the engine.
 
+--- @class Voxel
+--- @field position Vec3 0-based integer coordinates.
+--- @field colorIndex integer Palette index, 1..255.
+
 --- @class VoxModel
 --- @field size Extent3
---- @field voxels integer[] Flat `{ x, y, z, colorIndex, ... }`, 0-based coordinates.
---- @field count integer Number of voxels (`#voxels / 4`).
+--- @field voxels Voxel[]
 
 --- @class VoxFile
 --- @field version integer
@@ -16,6 +19,7 @@
 --- @field palette integer[][]? Color index (1..255) -> `{ r, g, b, a }`; nil without an RGBA chunk.
 
 local Extent3 = require("src.math.extent3")
+local Vec3 = require("src.math.vec3")
 
 local Vox = {}
 
@@ -51,15 +55,13 @@ local function readVoxels(data, pos, contentSize)
     if 4 + count * 4 > contentSize then
         fail("XYZI chunk declares %d voxels but holds only %d bytes", count, contentSize)
     end
-    -- Flat array (x, y, z, colorIndex, ...) to avoid one table per voxel.
     local voxels = {}
     for i = 0, count - 1 do
         local p = pos + 4 + i * 4
         local x, y, z, colorIndex = data:byte(p, p + 3)
-        local base = i * 4
-        voxels[base + 1], voxels[base + 2], voxels[base + 3], voxels[base + 4] = x, y, z, colorIndex
+        voxels[#voxels + 1] = { position = Vec3.new(x, y, z), colorIndex = colorIndex }
     end
-    return voxels, count
+    return voxels
 end
 
 local function readPalette(data, pos)
@@ -100,8 +102,7 @@ function Vox.parse(data)
                 fail("XYZI chunk at offset %d has no preceding SIZE chunk", pos - 1)
             end
             --- @cast pendingSize -nil
-            local voxels, count = readVoxels(data, body, contentSize)
-            models[#models + 1] = { size = pendingSize, voxels = voxels, count = count }
+            models[#models + 1] = { size = pendingSize, voxels = readVoxels(data, body, contentSize) }
             pendingSize = nil
         elseif id == "RGBA" then
             if contentSize < 255 * 4 then

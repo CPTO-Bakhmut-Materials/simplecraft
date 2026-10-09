@@ -5,7 +5,6 @@
 -- Everything outside the grid reads as air and cannot be modified.
 
 local Blocks = require("src.blocks")
-local Vec3 = require("src.math.vec3")
 
 --- @class World
 --- @field size Extent3 In blocks.
@@ -43,10 +42,8 @@ function World.fromVox(vox)
         blockForIndex[index] = Blocks.fromColor(color[1], color[2], color[3])
     end
 
-    local voxels = model.voxels -- flat { x, y, z, colorIndex, ... }
-    for i = 1, model.count * 4, 4 do
-        local block = Vec3.new(voxels[i], voxels[i + 1], voxels[i + 2])
-        world:set(block, blockForIndex[voxels[i + 3]] or Blocks.STONE)
+    for _, voxel in ipairs(model.voxels) do
+        world:set(voxel.position, blockForIndex[voxel.colorIndex] or Blocks.STONE)
     end
     return world
 end

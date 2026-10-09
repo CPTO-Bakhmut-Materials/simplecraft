@@ -94,8 +94,7 @@ every lua-language-server diagnostic enabled in `.luarc.json` is an error, and C
 | `src/camera.lua` | Free-flying camera |
 | `src/math/` | `Vec3` (positions, directions), `Extent3` (grid sizes), `Mat4` (matrices) |
 | `src/raycast.lua` | Voxel ray traversal for block picking |
-| `src/input.lua` | Mouse & keyboard or touch input; turns LÖVE events into per-frame movement, look and actions |
-| `src/touch_controls.lua` | Touch gestures: held direction keys and buttons, look drag |
+| `src/input/` | Player input, one type per session: `init.lua` picks it and registers its LÖVE callbacks; `mouse_keyboard.lua` (look, WASD, clicks, Esc, G) or `touch_controls.lua` (direction keys, buttons, look drag) |
 | `src/hud.lua` | Crosshair, touch direction keys and buttons: layout, hit testing, drawing |
 | `src/config.lua` | Tunables and key bindings |
 | `tools/` | Test-world generator, `.vox` writer, web build (`build_web.sh`, `web/index.html`, icons) |

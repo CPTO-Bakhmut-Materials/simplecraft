@@ -1,9 +1,13 @@
 --- Runs the unit tests. From the project root: `luajit tests/run.lua`
 
+-- Let `require("src.input")` find src/input/init.lua, as LÖVE does.
+package.path = "./?/init.lua;" .. package.path
+
 local lib = require("tests.lib")
 
 local SUITES = {
-    "vec3", "extent3", "mat4", "vox", "world", "mesher", "raycast", "camera", "hud", "touch_controls", "input",
+    "vec3", "extent3", "mat4", "vox", "world", "mesher", "raycast", "camera", "hud",
+    "touch_controls", "mouse_keyboard", "input",
 }
 
 for _, name in ipairs(SUITES) do

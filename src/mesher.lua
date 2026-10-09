@@ -12,7 +12,7 @@ local Vec3 = require("src.math.vec3")
 
 --- @class CubeFace
 --- @field normal Vec3 Points out of the block; the neighbor across this face is `block + normal`.
---- @field texture "top"|"side"|"bottom" Which BlockDef texture layer the face uses.
+--- @field texture BlockFace Which of the block's textures the face uses.
 --- @field shade number Brightness, faking directional light.
 --- @field corners Vec3[] Offsets from the block's minimum corner.
 
@@ -86,10 +86,9 @@ function Mesher.buildChunk(world, origin, size)
                 local block = Vec3.new(x, y, z)
                 local id = world:get(block)
                 if id ~= Blocks.AIR then
-                    local def = Blocks.defs[id]
                     for _, face in ipairs(FACES) do
                         if not world:isSolid(block + face.normal) then
-                            emitFace(vertices, block, face, def[face.texture])
+                            emitFace(vertices, block, face, Blocks.textureLayer(id, face.texture))
                         end
                     end
                 end

@@ -16,7 +16,8 @@ t.test("hud: direction keys sit bottom-left, the other buttons bottom-right", fu
     t.eq(#hud.buttons, 8)
     for _, button in ipairs(hud.buttons) do
         local isKey = DIRECTIONS[button.name] == true
-        t.eq(button.shape, isKey and "square" or "circle", button.name .. " shape")
+        t.eq(button.kind == "move", isKey, button.name .. " kind")
+        t.eq(button.action, button.kind == "action" and button.name or nil, button.name .. " action")
         t.ok(isKey == (button.x < WIDTH / 2), button.name .. " side")
         t.ok(button.y > HEIGHT / 2, button.name .. " bottom half")
         t.ok(button.x - button.size >= 0 and button.x + button.size <= WIDTH
@@ -37,8 +38,8 @@ end)
 t.test("hud: hit test finds each button", function()
     local hud = newHud()
     for _, button in ipairs(hud.buttons) do
-        t.eq(hud:hitTest(button.x, button.y), button.name)
-        t.eq(hud:hitTest(button.x + button.size * 1.05, button.y), button.name, "slightly outside")
+        t.eq(hud:hitTest(button.x, button.y), button)
+        t.eq(hud:hitTest(button.x + button.size * 1.05, button.y), button, "slightly outside")
     end
 end)
 

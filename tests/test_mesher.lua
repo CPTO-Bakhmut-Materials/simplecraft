@@ -35,7 +35,6 @@ end)
 t.test("mesher: grass uses top, side and bottom layers", function()
     local world = World.new(Extent3.new(1, 1, 1))
     world:set(Vec3.new(0, 0, 0), Blocks.GRASS)
-    local def = Blocks.defs[Blocks.GRASS]
     local layerByNormal = {}
     local vertices = Mesher.buildChunk(world, Vec3.ZERO, 16)
     for i = 1, #vertices, VERTICES_PER_FACE do
@@ -43,9 +42,11 @@ t.test("mesher: grass uses top, side and bottom layers", function()
         local kind = (zs == 3 and "top") or (zs == 0 and "bottom") or "side"
         layerByNormal[kind] = vertices[i][6]
     end
-    t.eq(layerByNormal.top, def.top)
-    t.eq(layerByNormal.side, def.side)
-    t.eq(layerByNormal.bottom, def.bottom)
+    t.eq(layerByNormal.top, Blocks.textureLayer(Blocks.GRASS, "top"))
+    t.eq(layerByNormal.side, Blocks.textureLayer(Blocks.GRASS, "side"))
+    t.eq(layerByNormal.bottom, Blocks.textureLayer(Blocks.GRASS, "bottom"))
+    t.ok(layerByNormal.top ~= layerByNormal.side and layerByNormal.side ~= layerByNormal.bottom,
+        "three different layers")
 end)
 
 t.test("mesher: triangles wind counter-clockwise seen from outside", function()

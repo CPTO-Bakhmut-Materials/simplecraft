@@ -45,16 +45,11 @@ function Vec3.__sub(a, b)
     return Vec3.new(a.x - b.x, a.y - b.y, a.z - b.z)
 end
 
---- Scales a vector; works as `v * s` and `s * v`.
---- @param a Vec3|number
---- @param b Vec3|number
+--- Scales a vector: `v * s` (write the number second).
+--- @param a Vec3
+--- @param b number
 --- @return Vec3
 function Vec3.__mul(a, b)
-    if type(a) == "number" then
-        a, b = b, a
-    end
-    --- @cast a Vec3
-    --- @cast b number
     return Vec3.new(a.x * b, a.y * b, a.z * b)
 end
 

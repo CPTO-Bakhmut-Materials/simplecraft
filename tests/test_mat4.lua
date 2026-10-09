@@ -11,16 +11,6 @@ local function nearVec(actual, expected, message)
     end
 end
 
-t.test("mat4: multiply by identity is a no-op", function()
-    local m = Mat4.perspective(1, 1.5, 0.1, 100)
-    local product = Mat4.identity() * m
-    for row = 1, 4 do
-        for col = 1, 4 do
-            t.near(product:get(row, col), m:get(row, col), ("element %d,%d"):format(row, col))
-        end
-    end
-end)
-
 t.test("mat4: multiplication applies the right-hand matrix first", function()
     local view = Mat4.lookAlong(Vec3.new(3, 4, 5), Vec3.new(1, 0, 0), Vec3.new(0, 0, 1))
     local projection = Mat4.perspective(math.rad(90), 1, 0.5, 50)

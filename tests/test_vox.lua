@@ -1,9 +1,13 @@
 local t = require("tests.lib")
 local Extent3 = require("src.math.extent3")
+local Vec3 = require("src.math.vec3")
 local Vox = require("src.vox")
 local VoxWriter = require("tools.vox_writer")
 
-local MODEL = { size = Extent3.new(3, 4, 5), voxels = { 0, 1, 2, 7, 2, 3, 4, 9 } }
+local MODEL = {
+    size = Extent3.new(3, 4, 5),
+    voxels = { { position = Vec3.new(0, 1, 2), colorIndex = 7 }, { position = Vec3.new(2, 3, 4), colorIndex = 9 } },
+}
 
 t.test("vox: round-trips size, voxels and palette", function()
     local vox = Vox.parse(VoxWriter.encode(MODEL, { [7] = { 10, 20, 30 } }))
@@ -11,9 +15,10 @@ t.test("vox: round-trips size, voxels and palette", function()
     t.eq(#vox.models, 1)
     local model = vox.models[1]
     t.eq(model.size, Extent3.new(3, 4, 5))
-    t.eq(model.count, 2)
-    for i, value in ipairs(MODEL.voxels) do
-        t.eq(model.voxels[i], value, "voxel byte " .. i)
+    t.eq(#model.voxels, 2)
+    for i, voxel in ipairs(MODEL.voxels) do
+        t.eq(model.voxels[i].position, voxel.position, "voxel " .. i .. " position")
+        t.eq(model.voxels[i].colorIndex, voxel.colorIndex, "voxel " .. i .. " color")
     end
     t.eq(vox.palette[7][1], 10); t.eq(vox.palette[7][2], 20); t.eq(vox.palette[7][3], 30)
 end)
@@ -30,7 +35,7 @@ t.test("vox: skips unknown chunks", function()
     local patched = data:sub(1, 16)
         .. string.char(childrenSize % 256, math.floor(childrenSize / 256) % 256, 0, 0)
         .. extra .. data:sub(21)
-    t.eq(Vox.parse(patched).models[1].count, 2)
+    t.eq(#Vox.parse(patched).models[1].voxels, 2)
 end)
 
 t.test("vox: rejects wrong magic", function()

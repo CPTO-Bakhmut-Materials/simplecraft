@@ -1,17 +1,18 @@
 --- Block type registry.
 --
 -- Block ids are small integers stored in the world grid (0 = air). Each solid
--- block names a texture layer for its top, side and bottom faces, plus a
+-- block names the texture file for its top, side and bottom faces, plus a
 -- reference color used to classify voxels when loading a .vox file.
 
 --- @alias BlockId integer 0 is air; see the constants below.
+--- @alias BlockFace "top"|"side"|"bottom"
 
 --- @class BlockDef
 --- @field name string
 --- @field color integer[] Reference `{ r, g, b }`, 0..255.
---- @field top integer Texture layer for each face direction.
---- @field side integer
---- @field bottom integer
+--- @field top string Texture file (in Config.textureDir) for each face direction.
+--- @field side string
+--- @field bottom string
 
 local Blocks = {}
 
@@ -20,26 +21,44 @@ Blocks.STONE = 1
 Blocks.DIRT = 2
 Blocks.GRASS = 3
 
---- Texture files, in array-texture layer order (layer = index - 1).
-Blocks.TEXTURES = { "stone.png", "dirt.png", "dirt_grass.png", "grass_top.png" }
-
-local LAYER_STONE, LAYER_DIRT, LAYER_GRASS_SIDE, LAYER_GRASS_TOP = 0, 1, 2, 3
-
 --- @type table<BlockId, BlockDef>
 Blocks.defs = {
     [Blocks.STONE] = {
         name = "stone", color = { 125, 125, 125 },
-        top = LAYER_STONE, side = LAYER_STONE, bottom = LAYER_STONE,
+        top = "stone.png", side = "stone.png", bottom = "stone.png",
     },
     [Blocks.DIRT] = {
         name = "dirt", color = { 121, 85, 58 },
-        top = LAYER_DIRT, side = LAYER_DIRT, bottom = LAYER_DIRT,
+        top = "dirt.png", side = "dirt.png", bottom = "dirt.png",
     },
     [Blocks.GRASS] = {
         name = "grass", color = { 95, 159, 53 },
-        top = LAYER_GRASS_TOP, side = LAYER_GRASS_SIDE, bottom = LAYER_DIRT,
+        top = "grass_top.png", side = "dirt_grass.png", bottom = "dirt.png",
     },
 }
+
+--- Every texture file the blocks use, once each, in array-texture layer order
+--- (layer = index - 1). Built from Blocks.defs.
+--- @type string[]
+Blocks.TEXTURES = {}
+local layerOfFile = {} --- @type table<string, integer>
+for _, def in ipairs(Blocks.defs) do
+    for _, face in ipairs({ "top", "side", "bottom" }) do
+        local file = def[face]
+        if not layerOfFile[file] then
+            layerOfFile[file] = #Blocks.TEXTURES
+            Blocks.TEXTURES[#Blocks.TEXTURES + 1] = file
+        end
+    end
+end
+
+--- Array-texture layer of a block face (see Blocks.TEXTURES).
+--- @param id BlockId A solid block.
+--- @param face BlockFace
+--- @return integer
+function Blocks.textureLayer(id, face)
+    return layerOfFile[Blocks.defs[id][face]]
+end
 
 --- Returns the solid block whose reference color is closest to (r, g, b).
 --- Voxel editors assign palette indices themselves, so classifying by color is

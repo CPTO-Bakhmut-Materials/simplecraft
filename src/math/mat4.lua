@@ -19,16 +19,6 @@ function Mat4.new(values)
     return setmetatable(values, Mat4)
 end
 
---- @return Mat4
-function Mat4.identity()
-    return Mat4.new({
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1,
-    })
-end
-
 --- @param fovY number Vertical field of view in radians.
 --- @param aspect number Width / height.
 --- @param near number

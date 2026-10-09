@@ -1,8 +1,7 @@
 --- Mouse & keyboard input: the captured mouse looks around, WASD/Space/Shift
 --- move, clicks break and place blocks, Esc quits and G toggles fullscreen.
 --
--- main.lua uses either this or the touch controls (src/touch_controls.lua) for
--- the whole session, and only forwards that input type's LÖVE events.
+-- Used instead of the touch controls for the whole session; see src/input/init.lua.
 
 local Config = require("src.config")
 
@@ -83,6 +82,9 @@ function MouseKeyboard:keypressed(key) -- luacheck: ignore 212/self (a method li
         love.window.setFullscreen(not love.window.getFullscreen())
     end
 end
+
+--- Mouse & keyboard have nothing on screen besides the HUD's crosshair.
+function MouseKeyboard:draw() end -- luacheck: ignore 212/self (same interface as the touch controls)
 
 --- @param focused boolean
 function MouseKeyboard:focus(focused) -- luacheck: ignore 212/self (a method like the other callbacks)

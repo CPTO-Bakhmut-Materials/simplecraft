@@ -35,7 +35,14 @@ end)
 
 t.test("world: fromVox maps palette colors to blocks", function()
     local data = VoxWriter.encode(
-        { size = Extent3.new(3, 1, 1), voxels = { 0, 0, 0, 5, 1, 0, 0, 6, 2, 0, 0, 7 } },
+        {
+            size = Extent3.new(3, 1, 1),
+            voxels = {
+                { position = Vec3.new(0, 0, 0), colorIndex = 5 },
+                { position = Vec3.new(1, 0, 0), colorIndex = 6 },
+                { position = Vec3.new(2, 0, 0), colorIndex = 7 },
+            },
+        },
         { [5] = { 100, 100, 100 }, [6] = { 120, 80, 60 }, [7] = { 80, 200, 40 } })
     local world = World.fromVox(Vox.parse(data))
     t.eq(world.size, Extent3.new(3, 1, 1))
@@ -45,6 +52,8 @@ t.test("world: fromVox maps palette colors to blocks", function()
 end)
 
 t.test("world: fromVox requires a palette", function()
-    local data = VoxWriter.encode({ size = Extent3.new(1, 1, 1), voxels = { 0, 0, 0, 1 } }, nil)
+    local data = VoxWriter.encode({
+        size = Extent3.new(1, 1, 1), voxels = { { position = Vec3.ZERO, colorIndex = 1 } },
+    }, nil)
     t.raises(function() World.fromVox(Vox.parse(data)) end, "no color palette")
 end)

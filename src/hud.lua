@@ -1,5 +1,5 @@
 --- Everything drawn over the world: the crosshair and, in touch mode, the
---- direction keys (bottom-left) and buttons (bottom-right).
+--- move keys (bottom-left) and buttons (bottom-right).
 --
 -- The HUD owns the on-screen layout: Hud:resize places every element for the
 -- current screen and Hud:hitTest tells what is under a point. Sizes are
@@ -8,15 +8,15 @@
 --
 -- Labels are drawn shapes, not text, so the HUD does not depend on fonts.
 
---- @alias MoveDirection "forward"|"back"|"left"|"right"
---- @alias HudButtonName BlockAction|MoveDirection|"up"|"down"
+--- @alias HudButtonName "forward"|"back"|"left"|"right"|"up"|"down"|BlockAction
 
 --- @class HudButton
 --- @field name HudButtonName
---- @field shape "circle"|"square" Direction keys are squares, the other buttons circles.
+--- @field kind "move"|"fly"|"action" Move keys are squares (bottom-left), the rest circles (bottom-right).
+--- @field action BlockAction? What an "action" button does.
 --- @field x number Center, in pixels.
 --- @field y number
---- @field size number Radius of a circle, half the side of a square.
+--- @field size number Half the side of a square, radius of a circle.
 
 --- @class Hud
 --- @field width number Screen size the layout was computed for.
@@ -60,8 +60,8 @@ function Hud:resize(width, height)
     local key, gap = KEY_SIZE * unit, KEY_GAP * unit
     local keyStep = key + gap
     local padX, padY = margin + key * 1.5 + gap, height - margin - key * 1.5 - gap
-    local function directionKey(name, column, row)
-        return { name = name, shape = "square", x = padX + column * keyStep, y = padY + row * keyStep, size = key / 2 }
+    local function moveKey(name, column, row)
+        return { name = name, kind = "move", x = padX + column * keyStep, y = padY + row * keyStep, size = key / 2 }
     end
     self.keyGap = gap
 
@@ -69,35 +69,41 @@ function Hud:resize(width, height)
     local radius = BUTTON_RADIUS * unit
     local right, bottom = width - margin - radius, height - margin - radius
     local step = BUTTON_SPACING * radius
-    local function roundButton(name, x, y)
-        return { name = name, shape = "circle", x = x, y = y, size = radius }
+    local function flyButton(name, x, y)
+        return { name = name, kind = "fly", x = x, y = y, size = radius }
+    end
+    --- @param action BlockAction
+    --- @param x number
+    --- @param y number
+    --- @return HudButton
+    local function actionButton(action, x, y)
+        return { name = action, kind = "action", action = action, x = x, y = y, size = radius }
     end
 
     self.buttons = {
-        directionKey("forward", 0, -1), directionKey("back", 0, 1),
-        directionKey("left", -1, 0), directionKey("right", 1, 0),
-        roundButton("place", right, bottom), roundButton("break", right - step, bottom),
-        roundButton("up", right, bottom - step), roundButton("down", right - step, bottom - step),
+        moveKey("forward", 0, -1), moveKey("back", 0, 1), moveKey("left", -1, 0), moveKey("right", 1, 0),
+        flyButton("up", right, bottom - step), flyButton("down", right - step, bottom - step),
+        actionButton("place", right, bottom), actionButton("break", right - step, bottom),
     }
 end
 
 --- The touch button under a screen point, or nil.
 --- @param x number
 --- @param y number
---- @return HudButtonName?
+--- @return HudButton?
 function Hud:hitTest(x, y)
     for _, button in ipairs(self.buttons) do
         local dx, dy = x - button.x, y - button.y
-        if button.shape == "square" then
+        if button.kind == "move" then
             -- Up to half the gap: neighboring keys meet but never overlap.
             local reach = button.size + self.keyGap / 2
             if math.abs(dx) <= reach and math.abs(dy) <= reach then
-                return button.name
+                return button
             end
         else
             local reach = button.size * BUTTON_HIT_SCALE
             if dx * dx + dy * dy <= reach * reach then
-                return button.name
+                return button
             end
         end
     end
@@ -157,7 +163,7 @@ end
 --- @param button HudButton
 --- @param mode "fill"|"line"
 local function drawButtonShape(button, mode)
-    if button.shape == "square" then
+    if button.kind == "move" then
         local side = button.size * 2
         love.graphics.rectangle(mode, button.x - button.size, button.y - button.size, side, side, button.size * 0.25)
     else
@@ -165,10 +171,12 @@ local function drawButtonShape(button, mode)
     end
 end
 
---- Direction keys and buttons, brighter while held.
+--- Draws the touch controls' keys and buttons, brighter while held. Called by
+--- TouchControls:draw.
 --- @param touch TouchControls
 function Hud:drawTouchControls(touch)
     local graphics = love.graphics
+    graphics.push("all")
     local outlineWidth, iconLineWidth = math.max(2, 0.006 * self.unit), math.max(3, 0.012 * self.unit)
     for _, button in ipairs(self.buttons) do
         graphics.setLineWidth(outlineWidth)
@@ -180,17 +188,13 @@ function Hud:drawTouchControls(touch)
         graphics.setLineWidth(iconLineWidth)
         drawButtonIcon(button.name, button.x, button.y, button.size * 0.4)
     end
+    graphics.pop()
 end
 
---- Draws the whole HUD over the world.
---- @param touchMode boolean
---- @param touch TouchControls Its state is shown in touch mode.
-function Hud:draw(touchMode, touch)
+--- Draws the crosshair. The input in use draws its own controls (if any).
+function Hud:draw()
     love.graphics.push("all")
     self:drawCrosshair()
-    if touchMode then
-        self:drawTouchControls(touch)
-    end
     love.graphics.pop()
 end
 

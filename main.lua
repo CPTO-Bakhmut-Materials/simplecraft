@@ -1,8 +1,7 @@
 --- Entry point: loads the world and wires camera, renderer, input and HUD together.
 -- Usage: `love . [path/to/world.vox] [--touch]`
 -- `--touch` uses the on-screen touch controls instead of mouse & keyboard (the
--- web page passes it on phones and tablets).
--- See src/input.lua.
+-- web page passes it on phones and tablets). See src/input/.
 
 local Blocks = require("src.blocks")
 local Camera = require("src.camera")
@@ -18,8 +17,8 @@ local World = require("src.world")
 local world --- @type World
 local camera --- @type Camera
 local renderer --- @type Renderer
-local input --- @type Input
 local hud = Hud.new()
+local input --- @type MouseKeyboard|TouchControls The session's one input (see src/input/).
 
 --- Reads a file from the game directory, falling back to the OS filesystem
 -- so worlds outside the project can be passed on the command line.
@@ -63,12 +62,6 @@ local function spawnCamera()
 end
 
 --- @param block Vec3
---- @return boolean
-local function isSolid(block)
-    return world:isSolid(block)
-end
-
---- @param block Vec3
 --- @param id BlockId
 local function setBlock(block, id)
     if world:set(block, id) then
@@ -79,7 +72,8 @@ end
 --- Breaks or places a block at the crosshair.
 --- @param action BlockAction
 local function interact(action)
-    local hit = Raycast.cast(isSolid, camera.position, camera:forward(), Config.reach)
+    local hit = Raycast.cast(function(block) return world:isSolid(block) end,
+        camera.position, camera:forward(), Config.reach)
     if not hit then
         return
     end
@@ -99,29 +93,29 @@ end
 
 --- @param args string[] Command-line arguments after the game path.
 --- @return string worldPath
---- @return boolean touch
+--- @return boolean touchMode
 local function parseArgs(args)
-    local worldPath, touch = Config.worldPath, false
+    local worldPath, touchMode = Config.worldPath, false
     for _, value in ipairs(args) do
         if value == "--touch" then
-            touch = true
+            touchMode = true
         elseif value:sub(1, 2) == "--" then
             error(("unknown option '%s'\nUsage: love . [path/to/world.vox] [--touch]"):format(value), 0)
         else
             worldPath = value
         end
     end
-    return worldPath, touch
+    return worldPath, touchMode
 end
 
 function love.load(args)
-    local worldPath, touch = parseArgs(args)
+    local worldPath, touchMode = parseArgs(args)
 
     world = loadWorld(worldPath)
     camera = spawnCamera()
     renderer = Renderer.new(world, { chunkSize = Config.chunkSize, textureDir = Config.textureDir })
     hud:resize(love.graphics.getDimensions())
-    input = Input.new(hud, touch)
+    input = Input.use(hud, touchMode)
     love.graphics.setBackgroundColor(Config.skyColor)
 end
 
@@ -141,26 +135,6 @@ end
 
 function love.draw()
     renderer:draw(camera:viewProjection(love.graphics.getWidth() / love.graphics.getHeight()))
-    hud:draw(input.touchMode, input.touch)
+    hud:draw()
+    input:draw()
 end
-
-function love.keypressed(key)
-    -- In a browser, the page handles these keys: Esc releases the mouse (quitting
-    -- would just freeze the page) and the fullscreen key uses the page's own
-    -- fullscreen, which works more reliably than the game's window there.
-    if love.system.getOS() == "Web" then
-        return
-    end
-    if key == Config.keys.quit then
-        love.event.quit()
-    elseif key == Config.keys.fullscreen then
-        love.window.setFullscreen(not love.window.getFullscreen())
-    end
-end
-
-function love.touchpressed(id, x, y) input:touchpressed(id, x, y) end
-function love.touchmoved(id, x, y, dx, dy) input:touchmoved(id, x, y, dx, dy) end
-function love.touchreleased(id) input:touchreleased(id) end
-function love.mousemoved(_, _, dx, dy, istouch) input:mousemoved(dx, dy, istouch) end
-function love.mousepressed(_, _, button, istouch) input:mousepressed(button, istouch) end
-function love.focus(focused) input:focus(focused) end

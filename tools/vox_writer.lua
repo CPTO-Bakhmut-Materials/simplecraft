@@ -12,19 +12,19 @@ local function chunk(id, content)
     return id .. u32(#content) .. u32(0) .. content
 end
 
---- @param model { size: Extent3, voxels: integer[] } `voxels` is flat `{ x, y, z, colorIndex, ... }`.
+--- @param model { size: Extent3, voxels: Voxel[] }
 --- @param palette table|nil Map of color index (1..255) -> `{ r, g, b }`; omitted
 ---   entries are black. Pass nil to write a file without an RGBA chunk.
 --- @return string File contents.
 function VoxWriter.encode(model, palette)
     local voxelBytes = {}
-    for i = 1, #model.voxels, 4 do
-        local v = model.voxels
-        voxelBytes[#voxelBytes + 1] = string.char(v[i], v[i + 1], v[i + 2], v[i + 3])
+    for _, voxel in ipairs(model.voxels) do
+        local p = voxel.position
+        voxelBytes[#voxelBytes + 1] = string.char(p.x, p.y, p.z, voxel.colorIndex)
     end
 
     local children = chunk("SIZE", u32(model.size.x) .. u32(model.size.y) .. u32(model.size.z))
-        .. chunk("XYZI", u32(#model.voxels / 4) .. table.concat(voxelBytes))
+        .. chunk("XYZI", u32(#model.voxels) .. table.concat(voxelBytes))
 
     if palette then
         local entries = {}

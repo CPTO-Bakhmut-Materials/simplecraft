@@ -1,26 +1,27 @@
---- Gesture tracking for the on-screen touch controls.
+--- Touch input: the on-screen controls.
 --
 -- A touch that starts on a HUD button holds that button (tapping break/place
 -- queues the action). One that starts on a direction key holds whichever key
 -- is under the finger as it slides, like a gamepad's D-pad. Any other touch
 -- drags the view. Several touches work at once. The layout comes from the HUD
 -- (src/hud.lua), which also draws the controls. Plain Lua, unit tested.
+--
+-- Used instead of mouse & keyboard for the whole session; see src/input/init.lua.
+
+local Config = require("src.config")
 
 --- @class TouchState
---- @field kind "button"|"direction"|"look"
---- @field button HudButtonName? The held button; for "direction", nil while between keys.
+--- @field kind "button"|"move"|"look" "move" touches started on a move key.
+--- @field button HudButtonName? The held button; for "move", nil while between keys.
 
 --- @class TouchControls
 --- @field hud Hud Layout: button positions and sizes.
 --- @field touches table<any, TouchState> LÖVE touch id -> state.
---- @field lookX number View drag since the last takeLook, in units.
+--- @field lookX number View drag since the last frame, in units (fractions of the shorter screen side).
 --- @field lookY number
---- @field actions BlockAction[] Taps since the last takeActions.
+--- @field actions BlockAction[] Taps since the last frame.
 local TouchControls = {}
 TouchControls.__index = TouchControls
-
---- @type table<HudButtonName, true>
-local DIRECTIONS = { forward = true, back = true, left = true, right = true }
 
 --- @param hud Hud
 --- @return TouchControls
@@ -32,16 +33,15 @@ end
 --- @param x number
 --- @param y number
 function TouchControls:pressed(id, x, y)
-    local target = self.hud:hitTest(x, y)
-    if not target then
+    local button = self.hud:hitTest(x, y)
+    if not button then
         self.touches[id] = { kind = "look" }
-    elseif DIRECTIONS[target] then
-        self.touches[id] = { kind = "direction", button = target }
+    elseif button.kind == "move" then
+        self.touches[id] = { kind = "move", button = button.name }
     else
-        self.touches[id] = { kind = "button", button = target }
-        if target == "break" or target == "place" then
-            --- @cast target BlockAction
-            self.actions[#self.actions + 1] = target
+        self.touches[id] = { kind = "button", button = button.name }
+        if button.action then
+            self.actions[#self.actions + 1] = button.action
         end
     end
 end
@@ -59,9 +59,9 @@ function TouchControls:moved(id, x, y, dx, dy)
     if touch.kind == "look" then
         self.lookX = self.lookX + dx / self.hud.unit
         self.lookY = self.lookY + dy / self.hud.unit
-    elseif touch.kind == "direction" then
-        local target = self.hud:hitTest(x, y)
-        touch.button = DIRECTIONS[target] and target or nil
+    elseif touch.kind == "move" then
+        local button = self.hud:hitTest(x, y)
+        touch.button = button and button.kind == "move" and button.name or nil
     end
 end
 
@@ -81,36 +81,31 @@ function TouchControls:isHeld(name)
     return false
 end
 
+--- @param controls TouchControls
 --- @param positive HudButtonName
 --- @param negative HudButtonName
 --- @return number -1, 0 or 1
-function TouchControls:axis(positive, negative)
-    return (self:isHeld(positive) and 1 or 0) - (self:isHeld(negative) and 1 or 0)
+local function axis(controls, positive, negative)
+    return (controls:isHeld(positive) and 1 or 0) - (controls:isHeld(negative) and 1 or 0)
 end
 
---- Current movement input, matching Camera:move.
---- @return number forward -1, 0 or 1
---- @return number right -1, 0 or 1
---- @return number up -1, 0 or 1
-function TouchControls:movement()
-    return self:axis("forward", "back"), self:axis("right", "left"), self:axis("up", "down")
+--- Returns this frame's input and clears what was collected for it.
+--- @return InputFrame
+function TouchControls:takeFrame()
+    local lookSpeed = Config.touchLookSpeed
+    local frame = {
+        forward = axis(self, "forward", "back"), right = axis(self, "right", "left"), up = axis(self, "up", "down"),
+        fast = false,
+        yaw = -self.lookX * lookSpeed, pitch = -self.lookY * lookSpeed,
+        actions = self.actions,
+    }
+    self.lookX, self.lookY, self.actions = 0, 0, {}
+    return frame
 end
 
---- Returns the view drag since the last call, in units (fractions of the
---- shorter screen side), and resets it.
---- @return number dx, number dy
-function TouchControls:takeLook()
-    local dx, dy = self.lookX, self.lookY
-    self.lookX, self.lookY = 0, 0
-    return dx, dy
-end
-
---- Returns the buttons tapped since the last call, oldest first, and clears them.
---- @return BlockAction[]
-function TouchControls:takeActions()
-    local actions = self.actions
-    self.actions = {}
-    return actions
+--- Draws the controls (the HUD does the drawing, since it owns the layout).
+function TouchControls:draw()
+    self.hud:drawTouchControls(self)
 end
 
 return TouchControls

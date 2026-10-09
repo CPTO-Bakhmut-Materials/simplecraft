@@ -129,8 +129,8 @@
         e.preventDefault();
       }
     });
-    // Fullscreen: the G key (keys.fullscreen in src/config.lua) and, on touch
-    // devices, the button. The page does it, not the game: the browser's own
+    // Fullscreen: the G key (keys.fullscreen in src/config.lua) with mouse &
+    // keyboard, the button with touch; like the game, only one input type is used. The page does it, not the game: the browser's own
     // fullscreen of the whole page keeps the canvas CSS above in charge, so the
     // game stays 16:9 and letterboxed. Browsers without the Fullscreen API
     // (Safari on iPhone) don't get the button.
@@ -142,7 +142,7 @@
       }
     }
     window.addEventListener("keydown", function (e) {
-      if (document.fullscreenEnabled && e.key.toLowerCase() === "g" && !e.repeat) {
+      if (!touchDevice && document.fullscreenEnabled && e.key.toLowerCase() === "g" && !e.repeat) {
         toggleFullscreen();
       }
     });
