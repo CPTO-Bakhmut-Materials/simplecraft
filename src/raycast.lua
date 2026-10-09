@@ -13,12 +13,16 @@ local function axisSetup(origin, direction)
 end
 
 --- Finds the first solid block along a ray.
--- @param isSolid function(x, y, z) -> boolean
--- @param ox, oy, oz Ray origin.
--- @param dx, dy, dz Ray direction; must be normalized so `maxDistance` is in blocks.
--- @param maxDistance number
--- @return table `{ x, y, z, nx, ny, nz }` or nil. The normal is the face the ray
---   entered through; it is (0, 0, 0) if the origin is inside a solid block.
+--- @param isSolid fun(x: integer, y: integer, z: integer): boolean
+--- @param ox number Ray origin.
+--- @param oy number
+--- @param oz number
+--- @param dx number Ray direction; must be normalized so `maxDistance` is in blocks.
+--- @param dy number
+--- @param dz number
+--- @param maxDistance number
+--- @return table? hit `{ x, y, z, nx, ny, nz }` or nil. The normal is the face the ray
+---   entered through; it is (0, 0, 0) if the origin is inside a solid block.
 function Raycast.cast(isSolid, ox, oy, oz, dx, dy, dz, maxDistance)
     local x, stepX, tMaxX, tDeltaX = axisSetup(ox, dx)
     local y, stepY, tMaxY, tDeltaY = axisSetup(oy, dy)

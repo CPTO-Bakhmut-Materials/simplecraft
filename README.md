@@ -64,7 +64,11 @@ To regenerate the bundled test world: `luajit tools/make_test_world.lua`.
 ```sh
 luajit tests/run.lua    # unit tests (pure Lua, no LÖVE needed)
 luacheck .              # lint, if luacheck is installed
+tools/check_types.sh    # type check with lua-language-server (set $LUALS if it's not on PATH)
 ```
+
+Type annotations use [LuaCATS](https://luals.github.io/wiki/annotations/) (`--- @param`, `--- @return`);
+every lua-language-server diagnostic enabled in `.luarc.json` is an error, and CI (`.github/workflows/check.yml`) fails on any.
 
 | Path | Purpose |
 |---|---|

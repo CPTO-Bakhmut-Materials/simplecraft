@@ -37,6 +37,7 @@ t.test("vox: rejects wrong magic", function()
 end)
 
 t.test("vox: rejects non-string input", function()
+    --- @diagnostic disable-next-line: param-type-mismatch
     t.raises(function() Vox.parse(nil) end, "missing 'VOX ' header")
 end)
 

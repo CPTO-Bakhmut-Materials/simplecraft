@@ -61,9 +61,9 @@ local function readPalette(data, pos)
 end
 
 --- Parses the contents of a .vox file.
--- @param data string Raw file bytes.
--- @return table `{ version, models = { {sizeX, sizeY, sizeZ, voxels, count}, ... }, palette }`
---   `palette` is nil when the file has no RGBA chunk. Errors on malformed input.
+--- @param data string Raw file bytes.
+--- @return table `{ version, models = { {sizeX, sizeY, sizeZ, voxels, count}, ... }, palette }`
+---   `palette` is nil when the file has no RGBA chunk. Errors on malformed input.
 function Vox.parse(data)
     if type(data) ~= "string" or #data < 8 or data:sub(1, 4) ~= "VOX " then
         fail("not a MagicaVoxel file (missing 'VOX ' header)")
@@ -88,6 +88,7 @@ function Vox.parse(data)
             if not pendingSize then
                 fail("XYZI chunk at offset %d has no preceding SIZE chunk", pos - 1)
             end
+            --- @cast pendingSize -nil
             local voxels, count = readVoxels(data, body, contentSize)
             models[#models + 1] = {
                 sizeX = pendingSize[1], sizeY = pendingSize[2], sizeZ = pendingSize[3],

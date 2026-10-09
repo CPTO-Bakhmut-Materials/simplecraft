@@ -8,7 +8,8 @@ Camera.__index = Camera
 local MAX_PITCH = math.rad(89) -- keeps the view direction off the up axis
 
 --- @param options table `{ x, y, z, yaw, pitch, fov, near, far }`; angles in radians.
---   Yaw is measured counter-clockwise from +X; positive pitch looks up.
+---   Yaw is measured counter-clockwise from +X; positive pitch looks up.
+--- @return table
 function Camera.new(options)
     local camera = setmetatable({
         x = options.x or 0, y = options.y or 0, z = options.z or 0,

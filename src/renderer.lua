@@ -30,7 +30,8 @@ void effect() {
 ]]
 
 --- @param world table See src/world.lua.
--- @param options table `{ chunkSize, textureDir }`
+--- @param options table `{ chunkSize, textureDir }`
+--- @return table
 function Renderer.new(world, options)
     local paths = {}
     for i, name in ipairs(Blocks.TEXTURES) do

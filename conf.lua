@@ -1,6 +1,8 @@
 function love.conf(t)
     -- love.js (the browser build, see tools/build_web.sh) is LÖVE 11.4, and it
-    -- crashes on startup when the audio modules are disabled.
+    -- crashes on startup when the audio modules are disabled. love._os is
+    -- internal, but love.system isn't loaded yet when conf.lua runs.
+    --- @diagnostic disable-next-line: undefined-field
     local web = love._os == "Web"
 
     t.identity = "love-mcraft"

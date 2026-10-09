@@ -1,0 +1,21 @@
+# Type-checks the Lua sources with lua-language-server (tools/check_types.sh).
+name: Check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  luals:
+    runs-on: ubuntu-latest
+    env:
+      LUALS_VERSION: 3.19.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lua-language-server
+        run: |
+          mkdir -p "$RUNNER_TEMP/luals"
+          curl -fsSL "https://github.com/LuaLS/lua-language-server/releases/download/$LUALS_VERSION/lua-language-server-$LUALS_VERSION-linux-x64.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP/luals"
+          echo "LUALS=$RUNNER_TEMP/luals/bin/lua-language-server" >> "$GITHUB_ENV"
+      - run: tools/check_types.sh

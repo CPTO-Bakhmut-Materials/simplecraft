@@ -1,5 +1,28 @@
 {
     "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
     "runtime.version": "LuaJIT",
-    "diagnostics.globals": ["love"]
+    "workspace.library": ["${3rd}/love2d/library"],
+    "workspace.checkThirdParty": false,
+    "workspace.ignoreDir": ["lovejs", "build"],
+    "diagnostics.globals": ["love"],
+    "diagnostics.groupFileStatus": {
+        "luadoc": "Any",
+        "strict": "Any",
+        "type-check": "Any"
+    },
+    "diagnostics.groupSeverity": {
+        "ambiguity": "Error",
+        "await": "Error",
+        "codestyle": "Error",
+        "conventions": "Error",
+        "duplicate": "Error",
+        "global": "Error",
+        "luadoc": "Error",
+        "redefined": "Error",
+        "strict": "Error",
+        "strong": "Error",
+        "type-check": "Error",
+        "unbalanced": "Error",
+        "unused": "Error"
+    }
 }

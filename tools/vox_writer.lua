@@ -13,9 +13,9 @@ local function chunk(id, content)
 end
 
 --- @param model table `{ sizeX, sizeY, sizeZ, voxels = { x, y, z, colorIndex, ... } }`
--- @param palette table|nil Map of color index (1..255) -> `{ r, g, b }`; omitted
---   entries are black. Pass nil to write a file without an RGBA chunk.
--- @return string File contents.
+--- @param palette table|nil Map of color index (1..255) -> `{ r, g, b }`; omitted
+---   entries are black. Pass nil to write a file without an RGBA chunk.
+--- @return string File contents.
 function VoxWriter.encode(model, palette)
     local voxelBytes = {}
     for i = 1, #model.voxels, 4 do
