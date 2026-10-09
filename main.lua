@@ -154,17 +154,20 @@ end
 
 function love.update(dt)
     layoutUi()
-    local keys = Config.keys
-    local speed = Config.moveSpeed * (love.keyboard.isDown(keys.fast) and Config.fastMultiplier or 1)
-    local forward, right, up = axis(keys.forward, keys.back), axis(keys.right, keys.left), axis(keys.up, keys.down)
+    -- Each mode reads only its own input; the toggle key is the one exception (love.keypressed).
+    local forward, right, up, speed
     if touchMode then
-        local touchForward, touchRight, touchUp = touch:movement()
-        forward, right, up = forward + touchForward, right + touchRight, up + touchUp
+        forward, right, up = touch:movement()
+        speed = Config.moveSpeed
         local lookX, lookY = touch:takeLook()
         camera:rotate(-lookX * Config.touchLookSpeed, -lookY * Config.touchLookSpeed)
         for _, action in ipairs(touch:takeActions()) do
             interact(action)
         end
+    else
+        local keys = Config.keys
+        forward, right, up = axis(keys.forward, keys.back), axis(keys.right, keys.left), axis(keys.up, keys.down)
+        speed = Config.moveSpeed * (love.keyboard.isDown(keys.fast) and Config.fastMultiplier or 1)
     end
     camera:move(dt, forward, right, up, speed)
     renderer:update()
