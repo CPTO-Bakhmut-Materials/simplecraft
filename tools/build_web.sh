@@ -7,7 +7,9 @@
 
 set -euo pipefail
 
-LOVEJS_VERSION="11.4.1"
+# Fork of love.js whose LÖVE build uses WebGL 2 (array textures); installed from its GitHub tag
+# (not the npm registry). npm 12+ refuses git packages unless --allow-git permits it.
+LOVEJS_PACKAGE="github:cptobakhmut925-glitch/love.js#v11.4.1-webgl2"
 # Initial WebAssembly heap; it grows on demand, but love.js needs a big enough start.
 MEMORY_BYTES=$((128 * 1024 * 1024))
 
@@ -22,7 +24,7 @@ zip -9 -r -q "$staging/game.love" main.lua conf.lua src assets
 rm -rf "$out"
 # -c: the compatibility build runs without SharedArrayBuffer, which needs
 # COOP/COEP response headers that GitHub Pages cannot send.
-npx --yes "love.js@$LOVEJS_VERSION" -c -t "love-mcraft" -m "$MEMORY_BYTES" "$staging/game.love" "$out"
+npx --yes --allow-git=root "$LOVEJS_PACKAGE" -c -t "love-mcraft" -m "$MEMORY_BYTES" "$staging/game.love" "$out"
 sed "s/{{memory}}/$MEMORY_BYTES/" "$root/tools/web/index.html" > "$out/index.html"
 rm -rf "$out/theme" # styles for the stock page replaced above
 touch "$out/.nojekyll"

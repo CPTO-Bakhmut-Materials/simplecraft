@@ -34,8 +34,9 @@ python3 -m http.server -d build/web    # then open http://localhost:8000
 To host it on GitHub Pages, push to `main` and set **Settings → Pages → Source** to **GitHub Actions**;
 `.github/workflows/pages.yml` builds and deploys it. Alternatively, upload the contents of `build/web` to any static host.
 
-Browser differences: WebGL 1 has no array textures, so the renderer falls back to a texture atlas;
-Esc releases the mouse instead of quitting; worlds can only be loaded from the bundled `assets/`.
+The build uses a [fork of love.js](https://github.com/cptobakhmut925-glitch/love.js) compiled with WebGL 2 support,
+which the renderer needs for array textures.
+Browser differences: Esc releases the mouse instead of quitting; worlds can only be loaded from the bundled `assets/`.
 
 ## Editing the world
 

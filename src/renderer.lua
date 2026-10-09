@@ -21,65 +21,13 @@ vec4 position(mat4 transformProjection, vec4 vertexPosition) {
 ]]
 
 -- Samples layer VaryingTexCoord.z of an array texture.
-local ARRAY_PIXEL_SHADER = [[
+local PIXEL_SHADER = [[
 uniform ArrayImage MainTex;
 
 void effect() {
     love_PixelColor = Texel(MainTex, VaryingTexCoord.xyz) * VaryingColor;
 }
 ]]
-
--- Fallback for GPUs without array textures (e.g. WebGL 1 in browsers): the
--- layers are stacked vertically in one 2D atlas. V is clamped half a texel
--- inside the tile so linear filtering does not bleed in the neighboring tile.
-local ATLAS_PIXEL_SHADER = [[
-uniform Image MainTex;
-uniform float layerCount;
-uniform float tileSize;
-
-void effect() {
-    float margin = 0.5 / tileSize;
-    float v = clamp(VaryingTexCoord.y, margin, 1.0 - margin);
-    vec2 uv = vec2(VaryingTexCoord.x, (VaryingTexCoord.z + v) / layerCount);
-    love_PixelColor = Texel(MainTex, uv) * VaryingColor;
-}
-]]
-
---- Stacks the images at `paths` vertically into one image. The layer count is
--- padded to a power of two, since WebGL 1 can only mipmap power-of-two textures.
-local function newAtlasImage(paths)
-    local tiles = {}
-    for i, path in ipairs(paths) do
-        tiles[i] = love.image.newImageData(path)
-    end
-    local tileSize = tiles[1]:getWidth()
-    local layerCount = 1
-    while layerCount < #tiles do
-        layerCount = layerCount * 2
-    end
-
-    local atlas = love.image.newImageData(tileSize, tileSize * layerCount)
-    for i, tile in ipairs(tiles) do
-        assert(tile:getWidth() == tileSize and tile:getHeight() == tileSize,
-            ("block texture '%s' must be %dx%d"):format(paths[i], tileSize, tileSize))
-        atlas:paste(tile, 0, (i - 1) * tileSize, 0, 0, tileSize, tileSize)
-    end
-    return love.graphics.newImage(atlas, { mipmaps = true }), layerCount, tileSize
-end
-
---- Loads the block textures as an array texture when supported, otherwise as
--- an atlas. Returns the texture and a shader that samples it.
-local function newTextureAndShader(paths)
-    if love.graphics.getTextureTypes()["array"] then
-        local texture = love.graphics.newArrayImage(paths, { mipmaps = true })
-        return texture, love.graphics.newShader(ARRAY_PIXEL_SHADER, VERTEX_SHADER)
-    end
-    local texture, layerCount, tileSize = newAtlasImage(paths)
-    local shader = love.graphics.newShader(ATLAS_PIXEL_SHADER, VERTEX_SHADER)
-    shader:send("layerCount", layerCount)
-    shader:send("tileSize", tileSize)
-    return texture, shader
-end
 
 --- @param world table See src/world.lua.
 -- @param options table `{ chunkSize, textureDir }`
@@ -88,7 +36,9 @@ function Renderer.new(world, options)
     for i, name in ipairs(Blocks.TEXTURES) do
         paths[i] = options.textureDir .. "/" .. name
     end
-    local textures, shader = newTextureAndShader(paths)
+    -- Browsers need WebGL 2, which the love.js build in tools/build_web.sh provides.
+    assert(love.graphics.getTextureTypes()["array"], "array textures are not supported (WebGL 2 is required)")
+    local textures = love.graphics.newArrayImage(paths, { mipmaps = true })
     textures:setFilter("linear", "nearest")
     textures:setMipmapFilter("linear")
 
@@ -99,7 +49,7 @@ function Renderer.new(world, options)
         chunksX = math.ceil(world.sizeX / size),
         chunksY = math.ceil(world.sizeY / size),
         chunksZ = math.ceil(world.sizeZ / size),
-        shader = shader,
+        shader = love.graphics.newShader(PIXEL_SHADER, VERTEX_SHADER),
         textures = textures,
         meshes = {}, -- chunk key -> Mesh (absent for empty chunks)
         dirty = {}, -- chunk key -> true
