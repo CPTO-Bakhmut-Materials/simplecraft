@@ -4,8 +4,6 @@
 -- controls, see src/touch_controls.lua) when started with `--touch`, which the
 -- web page passes on phones and tablets; mouse & keyboard (captured mouse looks,
 -- WASD moves, clicks break/place) otherwise. Each mode reads only its own input.
--- In touch mode the left mouse button acts as a finger, so `love . --touch` can
--- be tried on a desktop.
 
 local Config = require("src.config")
 local TouchControls = require("src.touch_controls")
@@ -29,8 +27,6 @@ local TouchControls = require("src.touch_controls")
 --- @field mouseActions BlockAction[] Clicks since the last frame.
 local Input = {}
 Input.__index = Input
-
-local MOUSE_TOUCH_ID = "mouse" -- touch id for the mouse acting as a finger
 
 --- @param hud Hud Layout of the touch controls.
 --- @param touchMode boolean
@@ -76,9 +72,8 @@ function Input:takeFrame()
     return frame
 end
 
--- LÖVE callbacks, forwarded from main.lua. Touches also arrive as emulated
--- mouse events (`istouch`); the mouse callbacks ignore those, since the touch
--- callbacks already handle them.
+-- LÖVE callbacks, forwarded from main.lua. The mouse is only used in mouse
+-- mode, and never through the mouse events LÖVE emulates from touches (`istouch`).
 
 --- @param id any
 --- @param x number
@@ -105,49 +100,31 @@ function Input:touchreleased(id)
     self.touch:released(id)
 end
 
---- @param x number
---- @param y number
 --- @param dx number
 --- @param dy number
 --- @param istouch boolean
-function Input:mousemoved(x, y, dx, dy, istouch)
-    if istouch then
+function Input:mousemoved(dx, dy, istouch)
+    if self.touchMode or istouch then
         return
     end
-    if self.touchMode then
-        self.touch:moved(MOUSE_TOUCH_ID, x, y, dx, dy)
-    elseif love.mouse.getRelativeMode() then
+    if love.mouse.getRelativeMode() then
         self.mouseYaw = self.mouseYaw - dx * Config.mouseSensitivity
         self.mousePitch = self.mousePitch - dy * Config.mouseSensitivity
     end
 end
 
---- @param x number
---- @param y number
 --- @param button number
 --- @param istouch boolean
-function Input:mousepressed(x, y, button, istouch)
-    if istouch then
+function Input:mousepressed(button, istouch)
+    if self.touchMode or istouch then
         return
     end
-    if self.touchMode then
-        if button == 1 then
-            self.touch:pressed(MOUSE_TOUCH_ID, x, y)
-        end
-    elseif not love.mouse.getRelativeMode() then
+    if not love.mouse.getRelativeMode() then
         love.mouse.setRelativeMode(true) -- a click on the uncaptured window only recaptures the mouse
     elseif button == Config.mouseButtons.breakBlock then
         self.mouseActions[#self.mouseActions + 1] = "break"
     elseif button == Config.mouseButtons.placeBlock then
         self.mouseActions[#self.mouseActions + 1] = "place"
-    end
-end
-
---- @param button number
---- @param istouch boolean
-function Input:mousereleased(button, istouch)
-    if self.touchMode and not istouch and button == 1 then
-        self.touch:released(MOUSE_TOUCH_ID)
     end
 end
 

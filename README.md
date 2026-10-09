@@ -8,7 +8,7 @@ Fly around a pre-built world, break blocks and place dirt. See [design.md](desig
 ```sh
 love .                         # loads assets/worlds/test.vox
 love . /path/to/world.vox      # loads any MagicaVoxel file
-love . --touch                 # on-screen touch controls (the left mouse button acts as a finger)
+love . --touch                 # on-screen touch controls instead of mouse & keyboard
 ```
 
 | Input | Action |

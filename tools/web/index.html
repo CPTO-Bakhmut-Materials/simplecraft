@@ -132,36 +132,26 @@
     // Fullscreen: the G key (keys.fullscreen in src/config.lua) and, on touch
     // devices, the button. The page does it, not the game: the browser's own
     // fullscreen of the whole page keeps the canvas CSS above in charge, so the
-    // game stays 16:9 and letterboxed. Safari on iPad only has the prefixed API;
-    // Safari on iPhone has none, so the button stays hidden there.
-    var root = document.documentElement;
-    var fullscreenSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
-    function fullscreenElement() {
-      return document.fullscreenElement || document.webkitFullscreenElement;
-    }
+    // game stays 16:9 and letterboxed. Browsers without the Fullscreen API
+    // (Safari on iPhone) don't get the button.
     function toggleFullscreen() {
-      if (fullscreenElement()) {
-        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
       } else {
-        var request = (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
-        if (request) {
-          request.catch(function () {});
-        }
+        document.documentElement.requestFullscreen().catch(function () {});
       }
     }
     window.addEventListener("keydown", function (e) {
-      if (fullscreenSupported && e.key.toLowerCase() === "g" && !e.repeat) {
+      if (document.fullscreenEnabled && e.key.toLowerCase() === "g" && !e.repeat) {
         toggleFullscreen();
       }
     });
     var fullscreenButton = document.getElementById("fullscreen");
-    if (touchDevice && fullscreenSupported) {
+    if (touchDevice && document.fullscreenEnabled) {
       fullscreenButton.style.display = "block";
       fullscreenButton.addEventListener("click", toggleFullscreen);
-      ["fullscreenchange", "webkitfullscreenchange"].forEach(function (name) {
-        document.addEventListener(name, function () {
-          fullscreenButton.classList.toggle("active", !!fullscreenElement());
-        });
+      document.addEventListener("fullscreenchange", function () {
+        fullscreenButton.classList.toggle("active", !!document.fullscreenElement);
       });
     }
     window.addEventListener("click", function () { window.focus(); });

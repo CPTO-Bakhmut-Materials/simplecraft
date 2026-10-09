@@ -32,7 +32,7 @@ end)
 
 t.test("input: mouse mode turns mouse motion into look, once per frame", function()
     local input = newInput(false)
-    input:mousemoved(0, 0, 100, -50, false)
+    input:mousemoved(100, -50, false)
     local frame = input:takeFrame()
     t.near(frame.yaw, -100 * Config.mouseSensitivity)
     t.near(frame.pitch, 50 * Config.mouseSensitivity)
@@ -42,8 +42,8 @@ end)
 
 t.test("input: captured clicks break and place", function()
     local input = newInput(false)
-    input:mousepressed(10, 10, Config.mouseButtons.breakBlock, false)
-    input:mousepressed(10, 10, Config.mouseButtons.placeBlock, false)
+    input:mousepressed(Config.mouseButtons.breakBlock, false)
+    input:mousepressed(Config.mouseButtons.placeBlock, false)
     local actions = input:takeFrame().actions
     t.eq(#actions, 2); t.eq(actions[1], "break"); t.eq(actions[2], "place")
 end)
@@ -51,7 +51,7 @@ end)
 t.test("input: a click on the uncaptured window only recaptures the mouse", function()
     local input = newInput(false)
     captured = false
-    input:mousepressed(WIDTH / 2, HEIGHT / 2, Config.mouseButtons.breakBlock, false)
+    input:mousepressed(Config.mouseButtons.breakBlock, false)
     t.eq(captured, true, "captured")
     t.eq(#input:takeFrame().actions, 0, "the capturing click does nothing else")
 end)
@@ -74,26 +74,34 @@ t.test("input: touch mode ignores the keyboard and mouse look", function()
     t.eq(frame.forward, 0); t.eq(frame.up, 0); t.eq(frame.fast, false)
 end)
 
-t.test("input: in touch mode the left mouse button acts as a finger", function()
-    local input, hud = newInput(true)
-    input:mousepressed(WIDTH * 0.75, HEIGHT * 0.5, 1, false)
-    input:mousemoved(WIDTH * 0.75 + 72, HEIGHT * 0.5, 72, 0, false)
-    input:mousereleased(1, false)
+t.test("input: touch mode ignores the mouse", function()
+    local input = newInput(true)
+    input:mousemoved(72, 0, false)
+    input:mousepressed(1, false)
     local frame = input:takeFrame()
-    t.near(frame.yaw, -0.1 * Config.touchLookSpeed, "72 px of a 720 px screen is 0.1 unit")
-    for _, button in ipairs(hud.buttons) do
-        if button.name == "place" then
-            input:mousepressed(button.x, button.y, 1, false)
-        end
-    end
-    t.eq(input:takeFrame().actions[1], "place")
+    t.eq(frame.yaw, 0); t.eq(#frame.actions, 0)
 end)
 
-t.test("input: touches emulated as mouse events are ignored", function()
-    local input = newInput(true)
-    input:mousepressed(WIDTH * 0.75, HEIGHT * 0.5, 1, true)
-    input:mousemoved(WIDTH * 0.75 + 72, HEIGHT * 0.5, 72, 0, true)
-    t.eq(input:takeFrame().yaw, 0)
+t.test("input: touch mode reads touches", function()
+    local input, hud = newInput(true)
+    input:touchpressed("look", WIDTH * 0.5, HEIGHT * 0.3)
+    input:touchmoved("look", WIDTH * 0.5 + 72, HEIGHT * 0.3, 72, 0)
+    for _, button in ipairs(hud.buttons) do
+        if button.name == "place" then
+            input:touchpressed("tap", button.x, button.y)
+        end
+    end
+    local frame = input:takeFrame()
+    t.near(frame.yaw, -0.1 * Config.touchLookSpeed, "72 px of a 720 px screen is 0.1 unit")
+    t.eq(frame.actions[1], "place")
+end)
+
+t.test("input: mouse events emulated from touches are ignored", function()
+    local input = newInput(false)
+    input:mousemoved(72, 0, true)
+    input:mousepressed(Config.mouseButtons.breakBlock, true)
+    local frame = input:takeFrame()
+    t.eq(frame.yaw, 0); t.eq(#frame.actions, 0)
 end)
 
 t.test("input: losing focus releases the mouse", function()

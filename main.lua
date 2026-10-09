@@ -161,7 +161,6 @@ end
 function love.touchpressed(id, x, y) input:touchpressed(id, x, y) end
 function love.touchmoved(id, x, y, dx, dy) input:touchmoved(id, x, y, dx, dy) end
 function love.touchreleased(id) input:touchreleased(id) end
-function love.mousemoved(x, y, dx, dy, istouch) input:mousemoved(x, y, dx, dy, istouch) end
-function love.mousepressed(x, y, button, istouch) input:mousepressed(x, y, button, istouch) end
-function love.mousereleased(_, _, button, istouch) input:mousereleased(button, istouch) end
+function love.mousemoved(_, _, dx, dy, istouch) input:mousemoved(dx, dy, istouch) end
+function love.mousepressed(_, _, button, istouch) input:mousepressed(button, istouch) end
 function love.focus(focused) input:focus(focused) end
