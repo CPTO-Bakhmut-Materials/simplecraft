@@ -1,13 +1,11 @@
 --- Voxel ray traversal (Amanatides & Woo, "A Fast Voxel Traversal Algorithm").
 
+local Vec3 = require("src.math.vec3")
+
 --- @class RaycastHit
---- @field x integer Block that was hit.
---- @field y integer
---- @field z integer
---- @field nx integer Normal of the face the ray entered through; all 0 if the
+--- @field block Vec3 Integer coordinates of the block that was hit.
+--- @field normal Vec3 Normal of the face the ray entered through; zero if the
 ---   ray started inside a solid block.
---- @field ny integer
---- @field nz integer
 
 local Raycast = {}
 
@@ -23,24 +21,20 @@ end
 
 --- Finds the first solid block along a ray.
 --- @param isSolid fun(x: integer, y: integer, z: integer): boolean
---- @param ox number Ray origin.
---- @param oy number
---- @param oz number
---- @param dx number Ray direction; must be normalized so `maxDistance` is in blocks.
---- @param dy number
---- @param dz number
+--- @param origin Vec3
+--- @param direction Vec3 Must be normalized so `maxDistance` is in blocks.
 --- @param maxDistance number
 --- @return RaycastHit? hit nil if nothing solid is within `maxDistance`.
-function Raycast.cast(isSolid, ox, oy, oz, dx, dy, dz, maxDistance)
-    local x, stepX, tMaxX, tDeltaX = axisSetup(ox, dx)
-    local y, stepY, tMaxY, tDeltaY = axisSetup(oy, dy)
-    local z, stepZ, tMaxZ, tDeltaZ = axisSetup(oz, dz)
+function Raycast.cast(isSolid, origin, direction, maxDistance)
+    local x, stepX, tMaxX, tDeltaX = axisSetup(origin.x, direction.x)
+    local y, stepY, tMaxY, tDeltaY = axisSetup(origin.y, direction.y)
+    local z, stepZ, tMaxZ, tDeltaZ = axisSetup(origin.z, direction.z)
     local nx, ny, nz = 0, 0, 0
     local distance = 0
 
     while distance <= maxDistance do
         if isSolid(x, y, z) then
-            return { x = x, y = y, z = z, nx = nx, ny = ny, nz = nz }
+            return { block = Vec3.new(x, y, z), normal = Vec3.new(nx, ny, nz) }
         end
         if tMaxX < tMaxY and tMaxX < tMaxZ then
             x, distance, tMaxX = x + stepX, tMaxX, tMaxX + tDeltaX

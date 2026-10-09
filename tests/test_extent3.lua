@@ -1,0 +1,33 @@
+local t = require("tests.lib")
+local Extent3 = require("src.math.extent3")
+
+t.test("extent3: volume and equality", function()
+    local size = Extent3.new(2, 3, 4)
+    t.eq(size:volume(), 24)
+    t.eq(size, Extent3.new(2, 3, 4))
+    t.ok(size ~= Extent3.new(2, 3, 5))
+    t.eq(tostring(size), "2x3x4")
+end)
+
+t.test("extent3: contains covers 0..size-1 on each axis", function()
+    local size = Extent3.new(2, 3, 4)
+    t.ok(size:contains(0, 0, 0))
+    t.ok(size:contains(1, 2, 3))
+    t.ok(not size:contains(2, 0, 0))
+    t.ok(not size:contains(0, 3, 0))
+    t.ok(not size:contains(0, 0, 4))
+    t.ok(not size:contains(-1, 0, 0))
+end)
+
+t.test("extent3: index is X-fastest and cell inverts it", function()
+    local size = Extent3.new(2, 3, 4)
+    t.eq(size:index(0, 0, 0), 0)
+    t.eq(size:index(1, 0, 0), 1)
+    t.eq(size:index(0, 1, 0), 2)
+    t.eq(size:index(0, 0, 1), 6)
+    for index = 0, size:volume() - 1 do
+        local x, y, z = size:cell(index)
+        t.ok(size:contains(x, y, z), "cell " .. index .. " inside")
+        t.eq(size:index(x, y, z), index)
+    end
+end)

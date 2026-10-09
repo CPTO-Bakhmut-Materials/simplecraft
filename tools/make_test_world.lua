@@ -2,6 +2,7 @@
 -- Run from the project root: `luajit tools/make_test_world.lua`
 
 local Blocks = require("src.blocks")
+local Extent3 = require("src.math.extent3")
 local VoxWriter = require("tools.vox_writer")
 
 local SIZE_X, SIZE_Y, SIZE_Z = 48, 48, 24
@@ -52,6 +53,6 @@ for block, index in pairs(PALETTE_INDEX) do
 end
 
 local file = assert(io.open(OUTPUT, "wb"))
-file:write(VoxWriter.encode({ sizeX = SIZE_X, sizeY = SIZE_Y, sizeZ = SIZE_Z, voxels = voxels }, palette))
+file:write(VoxWriter.encode({ size = Extent3.new(SIZE_X, SIZE_Y, SIZE_Z), voxels = voxels }, palette))
 file:close()
 print(("wrote %s (%dx%dx%d, %d voxels)"):format(OUTPUT, SIZE_X, SIZE_Y, SIZE_Z, #voxels / 4))

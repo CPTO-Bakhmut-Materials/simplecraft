@@ -78,7 +78,8 @@ every lua-language-server diagnostic enabled in `.luarc.json` is an error, and C
 | `src/blocks.lua` | Block types, textures, color mapping |
 | `src/mesher.lua` | Builds chunk meshes with hidden-face culling |
 | `src/renderer.lua` | Shader, array texture, chunk mesh cache |
-| `src/camera.lua`, `src/mat4.lua` | Free camera and matrix math |
+| `src/camera.lua` | Free-flying camera |
+| `src/math/` | `Vec3` (positions, directions), `Extent3` (grid sizes), `Mat4` (matrices) |
 | `src/raycast.lua` | Voxel ray traversal for block picking |
 | `src/config.lua` | Tunables and key bindings |
 | `tools/` | Test-world generator, `.vox` writer, web build (`build_web.sh`, `web/index.html`) |

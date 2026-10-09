@@ -22,35 +22,20 @@ function Mat4.perspective(fovY, aspect, near, far)
     }
 end
 
-local function normalize(x, y, z)
-    local length = math.sqrt(x * x + y * y + z * z)
-    return x / length, y / length, z / length
-end
-
-local function cross(ax, ay, az, bx, by, bz)
-    return ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx
-end
-
---- View matrix for an eye at (ex, ey, ez) looking along direction (dx, dy, dz).
---- `dx, dy, dz` must not be parallel to the up vector (ux, uy, uz).
---- @param ex number
---- @param ey number
---- @param ez number
---- @param dx number
---- @param dy number
---- @param dz number
---- @param ux number
---- @param uy number
---- @param uz number
+--- View matrix for an eye at `eye` looking along `direction`, which must not
+--- be parallel to `up`.
+--- @param eye Vec3
+--- @param direction Vec3
+--- @param up Vec3
 --- @return Mat4
-function Mat4.lookAlong(ex, ey, ez, dx, dy, dz, ux, uy, uz)
-    local zx, zy, zz = normalize(-dx, -dy, -dz)
-    local xx, xy, xz = normalize(cross(ux, uy, uz, zx, zy, zz))
-    local yx, yy, yz = cross(zx, zy, zz, xx, xy, xz)
+function Mat4.lookAlong(eye, direction, up)
+    local zAxis = (-direction):normalized()
+    local xAxis = up:cross(zAxis):normalized()
+    local yAxis = zAxis:cross(xAxis)
     return {
-        xx, xy, xz, -(xx * ex + xy * ey + xz * ez),
-        yx, yy, yz, -(yx * ex + yy * ey + yz * ez),
-        zx, zy, zz, -(zx * ex + zy * ey + zz * ez),
+        xAxis.x, xAxis.y, xAxis.z, -xAxis:dot(eye),
+        yAxis.x, yAxis.y, yAxis.z, -yAxis:dot(eye),
+        zAxis.x, zAxis.y, zAxis.z, -zAxis:dot(eye),
         0, 0, 0, 1,
     }
 end
@@ -73,13 +58,12 @@ function Mat4.multiply(a, b)
     return out
 end
 
---- Transforms the point (x, y, z, 1); returns x, y, z, w.
+--- Transforms the point (p.x, p.y, p.z, 1); returns homogeneous x, y, z, w.
 --- @param m Mat4
---- @param x number
---- @param y number
---- @param z number
---- @return number, number, number, number
-function Mat4.transformPoint(m, x, y, z)
+--- @param p Vec3
+--- @return number x, number y, number z, number w
+function Mat4.transformPoint(m, p)
+    local x, y, z = p.x, p.y, p.z
     return m[1] * x + m[2] * y + m[3] * z + m[4],
         m[5] * x + m[6] * y + m[7] * z + m[8],
         m[9] * x + m[10] * y + m[11] * z + m[12],

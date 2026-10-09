@@ -1,6 +1,7 @@
 --- Draws the world as one mesh per chunk, rebuilding chunks when blocks change.
 
 local Blocks = require("src.blocks")
+local Extent3 = require("src.math.extent3")
 local Mesher = require("src.mesher")
 
 --- @class RendererOptions
@@ -10,9 +11,7 @@ local Mesher = require("src.mesher")
 --- @class Renderer
 --- @field world World
 --- @field chunkSize integer
---- @field chunksX integer
---- @field chunksY integer
---- @field chunksZ integer
+--- @field chunks Extent3 World size in chunks; chunk keys are `chunks:index(cx, cy, cz)`.
 --- @field shader love.Shader
 --- @field textures love.Image Array image, one layer per Blocks.TEXTURES entry.
 --- @field meshes table<integer, love.Mesh> Chunk key -> mesh (absent for empty chunks).
@@ -61,21 +60,16 @@ function Renderer.new(world, options)
     local self = setmetatable({
         world = world,
         chunkSize = size,
-        chunksX = math.ceil(world.sizeX / size),
-        chunksY = math.ceil(world.sizeY / size),
-        chunksZ = math.ceil(world.sizeZ / size),
+        chunks = Extent3.new(
+            math.ceil(world.size.x / size), math.ceil(world.size.y / size), math.ceil(world.size.z / size)),
         shader = love.graphics.newShader(PIXEL_SHADER, VERTEX_SHADER),
         textures = textures,
         meshes = {},
         dirty = {},
     }, Renderer)
 
-    for cz = 0, self.chunksZ - 1 do
-        for cy = 0, self.chunksY - 1 do
-            for cx = 0, self.chunksX - 1 do
-                self:markChunkDirty(cx, cy, cz)
-            end
-        end
+    for key = 0, self.chunks:volume() - 1 do
+        self.dirty[key] = true
     end
     return self
 end
@@ -85,17 +79,16 @@ end
 --- @param cy integer
 --- @param cz integer
 function Renderer:markChunkDirty(cx, cy, cz)
-    if cx >= 0 and cy >= 0 and cz >= 0 and cx < self.chunksX and cy < self.chunksY and cz < self.chunksZ then
-        self.dirty[cx + self.chunksX * (cy + self.chunksY * cz)] = true
+    if self.chunks:contains(cx, cy, cz) then
+        self.dirty[self.chunks:index(cx, cy, cz)] = true
     end
 end
 
---- Call after changing the block at (x, y, z). Also refreshes neighboring
+--- Call after changing the block at `block`. Also refreshes neighboring
 --- chunks when the block sits on a chunk border, since their faces may change.
---- @param x integer
---- @param y integer
---- @param z integer
-function Renderer:blockChanged(x, y, z)
+--- @param block Vec3 Integer block coordinates.
+function Renderer:blockChanged(block)
+    local x, y, z = block.x, block.y, block.z
     local size = self.chunkSize
     local cx, cy, cz = math.floor(x / size), math.floor(y / size), math.floor(z / size)
     local lx, ly, lz = x % size, y % size, z % size
@@ -108,11 +101,9 @@ function Renderer:blockChanged(x, y, z)
     if lz == size - 1 then self:markChunkDirty(cx, cy, cz + 1) end
 end
 
---- @param key integer `cx + chunksX * (cy + chunksY * cz)`
+--- @param key integer See Renderer.chunks.
 function Renderer:rebuildChunk(key)
-    local cx = key % self.chunksX
-    local cy = math.floor(key / self.chunksX) % self.chunksY
-    local cz = math.floor(key / (self.chunksX * self.chunksY))
+    local cx, cy, cz = self.chunks:cell(key)
     local size = self.chunkSize
 
     if self.meshes[key] then

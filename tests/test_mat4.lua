@@ -1,10 +1,11 @@
 local t = require("tests.lib")
-local Mat4 = require("src.mat4")
+local Mat4 = require("src.math.mat4")
+local Vec3 = require("src.math.vec3")
 
 local IDENTITY = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 }
 
 local function ndc(m, x, y, z)
-    local cx, cy, cz, cw = Mat4.transformPoint(m, x, y, z)
+    local cx, cy, cz, cw = Mat4.transformPoint(m, Vec3.new(x, y, z))
     return cx / cw, cy / cw, cz / cw
 end
 
@@ -29,14 +30,14 @@ t.test("mat4: 90 degree fov puts the frustum edge at x = 1", function()
 end)
 
 t.test("mat4: lookAlong maps eye to origin and forward to -Z", function()
-    local view = Mat4.lookAlong(3, 4, 5, 1, 0, 0, 0, 0, 1)
-    local x, y, z = Mat4.transformPoint(view, 3, 4, 5)
+    local view = Mat4.lookAlong(Vec3.new(3, 4, 5), Vec3.new(1, 0, 0), Vec3.new(0, 0, 1))
+    local x, y, z = Mat4.transformPoint(view, Vec3.new(3, 4, 5))
     t.near(x, 0); t.near(y, 0); t.near(z, 0)
-    x, y, z = Mat4.transformPoint(view, 5, 4, 5)
+    x, y, z = Mat4.transformPoint(view, Vec3.new(5, 4, 5))
     t.near(x, 0); t.near(y, 0); t.near(z, -2)
     -- World up stays screen up; +Y world is to the left when looking along +X.
-    x, y = Mat4.transformPoint(view, 3, 4, 6)
+    x, y = Mat4.transformPoint(view, Vec3.new(3, 4, 6))
     t.near(y, 1)
-    x = Mat4.transformPoint(view, 3, 5, 5)
+    x = Mat4.transformPoint(view, Vec3.new(3, 5, 5))
     t.near(x, -1)
 end)

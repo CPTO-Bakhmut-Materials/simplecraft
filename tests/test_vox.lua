@@ -1,15 +1,16 @@
 local t = require("tests.lib")
+local Extent3 = require("src.math.extent3")
 local Vox = require("src.vox")
 local VoxWriter = require("tools.vox_writer")
 
-local MODEL = { sizeX = 3, sizeY = 4, sizeZ = 5, voxels = { 0, 1, 2, 7, 2, 3, 4, 9 } }
+local MODEL = { size = Extent3.new(3, 4, 5), voxels = { 0, 1, 2, 7, 2, 3, 4, 9 } }
 
 t.test("vox: round-trips size, voxels and palette", function()
     local vox = Vox.parse(VoxWriter.encode(MODEL, { [7] = { 10, 20, 30 } }))
     t.eq(vox.version, 150)
     t.eq(#vox.models, 1)
     local model = vox.models[1]
-    t.eq(model.sizeX, 3); t.eq(model.sizeY, 4); t.eq(model.sizeZ, 5)
+    t.eq(model.size, Extent3.new(3, 4, 5))
     t.eq(model.count, 2)
     for i, value in ipairs(MODEL.voxels) do
         t.eq(model.voxels[i], value, "voxel byte " .. i)

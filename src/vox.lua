@@ -6,9 +6,7 @@
 -- dependency, so it can be unit tested outside the engine.
 
 --- @class VoxModel
---- @field sizeX integer
---- @field sizeY integer
---- @field sizeZ integer
+--- @field size Extent3
 --- @field voxels integer[] Flat `{ x, y, z, colorIndex, ... }`, 0-based coordinates.
 --- @field count integer Number of voxels (`#voxels / 4`).
 
@@ -16,6 +14,8 @@
 --- @field version integer
 --- @field models VoxModel[] At least one.
 --- @field palette integer[][]? Color index (1..255) -> `{ r, g, b, a }`; nil without an RGBA chunk.
+
+local Extent3 = require("src.math.extent3")
 
 local Vox = {}
 
@@ -94,17 +94,14 @@ function Vox.parse(data)
         id, contentSize, childrenSize = readChunkHeader(data, pos)
         local body = pos + HEADER_SIZE
         if id == "SIZE" then
-            pendingSize = { readU32(data, body), readU32(data, body + 4), readU32(data, body + 8) }
+            pendingSize = Extent3.new(readU32(data, body), readU32(data, body + 4), readU32(data, body + 8))
         elseif id == "XYZI" then
             if not pendingSize then
                 fail("XYZI chunk at offset %d has no preceding SIZE chunk", pos - 1)
             end
             --- @cast pendingSize -nil
             local voxels, count = readVoxels(data, body, contentSize)
-            models[#models + 1] = {
-                sizeX = pendingSize[1], sizeY = pendingSize[2], sizeZ = pendingSize[3],
-                voxels = voxels, count = count,
-            }
+            models[#models + 1] = { size = pendingSize, voxels = voxels, count = count }
             pendingSize = nil
         elseif id == "RGBA" then
             if contentSize < 255 * 4 then

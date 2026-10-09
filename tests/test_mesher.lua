@@ -1,29 +1,30 @@
 local t = require("tests.lib")
 local Blocks = require("src.blocks")
+local Extent3 = require("src.math.extent3")
 local Mesher = require("src.mesher")
 local World = require("src.world")
 
 local VERTICES_PER_FACE = 6
 
 t.test("mesher: lone block emits six faces", function()
-    local world = World.new(3, 3, 3)
+    local world = World.new(Extent3.new(3, 3, 3))
     world:set(1, 1, 1, Blocks.STONE)
     t.eq(#Mesher.buildChunk(world, 0, 0, 0, 16), 6 * VERTICES_PER_FACE)
 end)
 
 t.test("mesher: empty world emits nothing", function()
-    t.eq(#Mesher.buildChunk(World.new(4, 4, 4), 0, 0, 0, 16), 0)
+    t.eq(#Mesher.buildChunk(World.new(Extent3.new(4, 4, 4)), 0, 0, 0, 16), 0)
 end)
 
 t.test("mesher: shared faces are culled", function()
-    local world = World.new(3, 3, 3)
+    local world = World.new(Extent3.new(3, 3, 3))
     world:set(0, 0, 0, Blocks.STONE)
     world:set(1, 0, 0, Blocks.DIRT)
     t.eq(#Mesher.buildChunk(world, 0, 0, 0, 16), 10 * VERTICES_PER_FACE)
 end)
 
 t.test("mesher: culls against blocks in neighbouring chunks", function()
-    local world = World.new(4, 1, 1)
+    local world = World.new(Extent3.new(4, 1, 1))
     world:set(1, 0, 0, Blocks.STONE)
     world:set(2, 0, 0, Blocks.STONE)
     -- Chunk size 2: block (1,0,0) is in chunk 0, its +X neighbour in chunk 1.
@@ -31,7 +32,7 @@ t.test("mesher: culls against blocks in neighbouring chunks", function()
 end)
 
 t.test("mesher: grass uses top, side and bottom layers", function()
-    local world = World.new(1, 1, 1)
+    local world = World.new(Extent3.new(1, 1, 1))
     world:set(0, 0, 0, Blocks.GRASS)
     local def = Blocks.defs[Blocks.GRASS]
     local layerByNormal = {}
@@ -47,7 +48,7 @@ t.test("mesher: grass uses top, side and bottom layers", function()
 end)
 
 t.test("mesher: triangles wind counter-clockwise seen from outside", function()
-    local world = World.new(1, 1, 1)
+    local world = World.new(Extent3.new(1, 1, 1))
     world:set(0, 0, 0, Blocks.STONE)
     local vertices = Mesher.buildChunk(world, 0, 0, 0, 16)
     for i = 1, #vertices, 3 do
@@ -64,7 +65,7 @@ t.test("mesher: triangles wind counter-clockwise seen from outside", function()
 end)
 
 t.test("mesher: side textures are upright", function()
-    local world = World.new(1, 1, 1)
+    local world = World.new(Extent3.new(1, 1, 1))
     world:set(0, 0, 0, Blocks.STONE)
     for _, vertex in ipairs(Mesher.buildChunk(world, 0, 0, 0, 16)) do
         local isSideFace = vertex[7] < 1 and vertex[7] > 0.5

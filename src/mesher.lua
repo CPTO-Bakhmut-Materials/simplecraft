@@ -68,9 +68,9 @@ end
 --- @return MeshVertex[]
 function Mesher.buildChunk(world, x0, y0, z0, size)
     local vertices = {}
-    local x1 = math.min(x0 + size, world.sizeX) - 1
-    local y1 = math.min(y0 + size, world.sizeY) - 1
-    local z1 = math.min(z0 + size, world.sizeZ) - 1
+    local x1 = math.min(x0 + size, world.size.x) - 1
+    local y1 = math.min(y0 + size, world.size.y) - 1
+    local z1 = math.min(z0 + size, world.size.z) - 1
 
     for z = z0, z1 do
         for y = y0, y1 do

@@ -6,6 +6,7 @@ local Camera = require("src.camera")
 local Config = require("src.config")
 local Raycast = require("src.raycast")
 local Renderer = require("src.renderer")
+local Vec3 = require("src.math.vec3")
 local Vox = require("src.vox")
 local World = require("src.world")
 
@@ -44,10 +45,11 @@ end
 
 --- Places the camera outside one corner of the world, looking at its center.
 local function spawnCamera()
-    local x, y, z = -0.1 * world.sizeX, -0.1 * world.sizeY, world.sizeZ + 6
+    local size = world.size
+    local position = Vec3.new(-0.1 * size.x, -0.1 * size.y, size.z + 6)
     return Camera.new({
-        x = x, y = y, z = z,
-        yaw = math.atan2(world.sizeY / 2 - y, world.sizeX / 2 - x),
+        position = position,
+        yaw = math.atan2(size.y / 2 - position.y, size.x / 2 - position.x),
         pitch = math.rad(-25),
         fov = Config.fov, near = Config.nearPlane, far = Config.farPlane,
     })
@@ -64,29 +66,29 @@ local function axis(positiveKey, negativeKey)
     return value
 end
 
-local function setBlock(x, y, z, id)
-    if world:set(x, y, z, id) then
-        renderer:blockChanged(x, y, z)
+--- @param block Vec3
+--- @param id BlockId
+local function setBlock(block, id)
+    if world:set(block.x, block.y, block.z, id) then
+        renderer:blockChanged(block)
     end
 end
 
 local function interact(button)
-    local fx, fy, fz = camera:forward()
-    local hit = Raycast.cast(isSolid, camera.x, camera.y, camera.z, fx, fy, fz, Config.reach)
+    local hit = Raycast.cast(isSolid, camera.position, camera:forward(), Config.reach)
     if not hit then
         return
     end
 
     if button == Config.mouseButtons.breakBlock then
-        setBlock(hit.x, hit.y, hit.z, Blocks.AIR)
+        setBlock(hit.block, Blocks.AIR)
     elseif button == Config.mouseButtons.placeBlock then
-        if hit.nx == 0 and hit.ny == 0 and hit.nz == 0 then
+        if hit.normal == Vec3.new(0, 0, 0) then
             return -- camera is inside a block; there is no face to build on
         end
-        local x, y, z = hit.x + hit.nx, hit.y + hit.ny, hit.z + hit.nz
-        local insideCamera = x == math.floor(camera.x) and y == math.floor(camera.y) and z == math.floor(camera.z)
-        if not insideCamera then
-            setBlock(x, y, z, Blocks.DIRT)
+        local target = hit.block + hit.normal
+        if target ~= camera.position:floor() then
+            setBlock(target, Blocks.DIRT)
         end
     end
 end
