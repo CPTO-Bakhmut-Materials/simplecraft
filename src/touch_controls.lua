@@ -1,27 +1,17 @@
 --- Gesture tracking for the on-screen touch controls.
 --
 -- A touch that starts on a HUD button holds that button (tapping break/place
--- queues the action). Otherwise, one starting on the left half of the screen
--- becomes a floating joystick centered where it landed, and one on the right
--- half drags the view. Several touches work at once. The layout comes from the
--- HUD (src/hud.lua), which also draws the controls. Plain Lua, unit tested.
+-- queues the action). One that starts on a direction key holds whichever key
+-- is under the finger as it slides, like a gamepad's D-pad. Any other touch
+-- drags the view. Several touches work at once. The layout comes from the HUD
+-- (src/hud.lua), which also draws the controls. Plain Lua, unit tested.
 
 --- @class TouchState
---- @field kind "joystick"|"look"|"button"
---- @field button HudButtonName? For "button" touches.
---- @field originX number Where the touch started.
---- @field originY number
---- @field x number Where it is now.
---- @field y number
-
---- @class TouchJoystick
---- @field baseX number Where the joystick touch started (its center).
---- @field baseY number
---- @field knobX number Knob position, clamped to the joystick radius.
---- @field knobY number
+--- @field kind "button"|"direction"|"look"
+--- @field button HudButtonName? The held button; for "direction", nil while between keys.
 
 --- @class TouchControls
---- @field hud Hud Layout: button positions, joystick size, screen size.
+--- @field hud Hud Layout: button positions and sizes.
 --- @field touches table<any, TouchState> LÖVE touch id -> state.
 --- @field lookX number View drag since the last takeLook, in units.
 --- @field lookY number
@@ -29,7 +19,8 @@
 local TouchControls = {}
 TouchControls.__index = TouchControls
 
-local DEADZONE = 0.15 -- joystick deflection ignored near the center
+--- @type table<HudButtonName, true>
+local DIRECTIONS = { forward = true, back = true, left = true, right = true }
 
 --- @param hud Hud
 --- @return TouchControls
@@ -41,18 +32,18 @@ end
 --- @param x number
 --- @param y number
 function TouchControls:pressed(id, x, y)
-    local touch = { kind = "look", originX = x, originY = y, x = x, y = y }
     local target = self.hud:hitTest(x, y)
-    if target then
-        touch.kind, touch.button = "button", target
+    if not target then
+        self.touches[id] = { kind = "look" }
+    elseif DIRECTIONS[target] then
+        self.touches[id] = { kind = "direction", button = target }
+    else
+        self.touches[id] = { kind = "button", button = target }
         if target == "break" or target == "place" then
             --- @cast target BlockAction
             self.actions[#self.actions + 1] = target
         end
-    elseif x < self.hud.width / 2 then
-        touch.kind = "joystick"
     end
-    self.touches[id] = touch
 end
 
 --- @param id any
@@ -65,44 +56,18 @@ function TouchControls:moved(id, x, y, dx, dy)
     if not touch then
         return
     end
-    touch.x, touch.y = x, y
     if touch.kind == "look" then
         self.lookX = self.lookX + dx / self.hud.unit
         self.lookY = self.lookY + dy / self.hud.unit
+    elseif touch.kind == "direction" then
+        local target = self.hud:hitTest(x, y)
+        touch.button = DIRECTIONS[target] and target or nil
     end
 end
 
 --- @param id any
 function TouchControls:released(id)
     self.touches[id] = nil
-end
-
---- Joystick knob offset from its origin, clamped to the joystick radius.
---- @param touch TouchState
---- @return number dx, number dy In pixels.
-function TouchControls:knobOffset(touch)
-    local radius = self.hud.joystickRadius
-    local dx, dy = touch.x - touch.originX, touch.y - touch.originY
-    local length = math.sqrt(dx * dx + dy * dy)
-    if length > radius then
-        dx, dy = dx * radius / length, dy * radius / length
-    end
-    return dx, dy
-end
-
---- The held joystick, or nil if no touch is using it.
---- @return TouchJoystick?
-function TouchControls:joystick()
-    for _, touch in pairs(self.touches) do
-        if touch.kind == "joystick" then
-            local dx, dy = self:knobOffset(touch)
-            return {
-                baseX = touch.originX, baseY = touch.originY,
-                knobX = touch.originX + dx, knobY = touch.originY + dy,
-            }
-        end
-    end
-    return nil
 end
 
 --- @param name HudButtonName
@@ -116,22 +81,19 @@ function TouchControls:isHeld(name)
     return false
 end
 
+--- @param positive HudButtonName
+--- @param negative HudButtonName
+--- @return number -1, 0 or 1
+function TouchControls:axis(positive, negative)
+    return (self:isHeld(positive) and 1 or 0) - (self:isHeld(negative) and 1 or 0)
+end
+
 --- Current movement input, matching Camera:move.
---- @return number forward -1..1
---- @return number right -1..1
+--- @return number forward -1, 0 or 1
+--- @return number right -1, 0 or 1
 --- @return number up -1, 0 or 1
 function TouchControls:movement()
-    local forward, right = 0, 0
-    local joystick = self:joystick()
-    if joystick then
-        local radius = self.hud.joystickRadius
-        local dx, dy = joystick.knobX - joystick.baseX, joystick.knobY - joystick.baseY
-        if math.sqrt(dx * dx + dy * dy) > DEADZONE * radius then
-            forward, right = -dy / radius, dx / radius
-        end
-    end
-    local up = (self:isHeld("up") and 1 or 0) - (self:isHeld("down") and 1 or 0)
-    return forward, right, up
+    return self:axis("forward", "back"), self:axis("right", "left"), self:axis("up", "down")
 end
 
 --- Returns the view drag since the last call, in units (fractions of the

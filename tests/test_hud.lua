@@ -9,38 +9,54 @@ local function newHud(width, height)
     return hud
 end
 
-t.test("hud: buttons sit in the bottom-right corner, inside the screen", function()
+local DIRECTIONS = { forward = true, back = true, left = true, right = true }
+
+t.test("hud: direction keys sit bottom-left, the other buttons bottom-right", function()
     local hud = newHud()
-    t.eq(#hud.buttons, 4)
+    t.eq(#hud.buttons, 8)
     for _, button in ipairs(hud.buttons) do
-        t.ok(button.x > WIDTH / 2 and button.y > HEIGHT / 2, button.name .. " bottom-right")
-        t.ok(button.x + button.radius <= WIDTH and button.y + button.radius <= HEIGHT, button.name .. " inside")
+        local isKey = DIRECTIONS[button.name] == true
+        t.eq(button.shape, isKey and "square" or "circle", button.name .. " shape")
+        t.ok(isKey == (button.x < WIDTH / 2), button.name .. " side")
+        t.ok(button.y > HEIGHT / 2, button.name .. " bottom half")
+        t.ok(button.x - button.size >= 0 and button.x + button.size <= WIDTH
+            and button.y + button.size <= HEIGHT, button.name .. " inside")
     end
+end)
+
+t.test("hud: direction keys form a plus around an empty center", function()
+    local hud = newHud()
+    local keys = {}
+    for _, button in ipairs(hud.buttons) do keys[button.name] = button end
+    t.eq(keys.forward.x, keys.back.x); t.ok(keys.forward.y < keys.back.y)
+    t.eq(keys.left.y, keys.right.y); t.ok(keys.left.x < keys.right.x)
+    t.near(keys.left.y, (keys.forward.y + keys.back.y) / 2)
+    t.eq(hud:hitTest(keys.forward.x, keys.left.y), nil, "center")
 end)
 
 t.test("hud: hit test finds each button", function()
     local hud = newHud()
     for _, button in ipairs(hud.buttons) do
         t.eq(hud:hitTest(button.x, button.y), button.name)
-        t.eq(hud:hitTest(button.x + button.radius * 1.1, button.y), button.name, "slightly outside the circle")
+        t.eq(hud:hitTest(button.x + button.size * 1.05, button.y), button.name, "slightly outside")
     end
 end)
 
 t.test("hud: hit test misses empty screen", function()
     local hud = newHud()
     t.eq(hud:hitTest(WIDTH / 2, HEIGHT / 2), nil)
-    t.eq(hud:hitTest(hud.joystickHomeX, hud.joystickHomeY), nil, "the joystick area is not a target")
+    t.eq(hud:hitTest(10, 10), nil, "top-left corner")
 end)
 
 t.test("hud: layout scales with the shorter screen side", function()
     local hud = newHud()
-    local joystick, buttonRadius = hud.joystickRadius, hud.buttons[1].radius
+    local sizes = {}
+    for i, button in ipairs(hud.buttons) do sizes[i] = button.size end
     hud:resize(WIDTH * 2, HEIGHT * 2)
-    t.near(hud.joystickRadius, joystick * 2)
-    t.near(hud.buttons[1].radius, buttonRadius * 2)
+    for i, button in ipairs(hud.buttons) do t.near(button.size, sizes[i] * 2, button.name) end
     hud:resize(HEIGHT, WIDTH) -- portrait: the unit is now the width
     t.eq(hud.unit, HEIGHT)
     for _, button in ipairs(hud.buttons) do
-        t.ok(button.x + button.radius <= HEIGHT, button.name .. " still inside")
+        t.ok(button.x - button.size >= 0 and button.x + button.size <= HEIGHT, button.name .. " still inside")
     end
 end)

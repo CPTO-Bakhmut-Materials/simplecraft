@@ -81,9 +81,12 @@ t.test("input: in touch mode the left mouse button acts as a finger", function()
     input:mousereleased(1, false)
     local frame = input:takeFrame()
     t.near(frame.yaw, -0.1 * Config.touchLookSpeed, "72 px of a 720 px screen is 0.1 unit")
-    local button = hud.buttons[1]
-    input:mousepressed(button.x, button.y, 1, false)
-    t.eq(#input:takeFrame().actions, 1)
+    for _, button in ipairs(hud.buttons) do
+        if button.name == "place" then
+            input:mousepressed(button.x, button.y, 1, false)
+        end
+    end
+    t.eq(input:takeFrame().actions[1], "place")
 end)
 
 t.test("input: touches emulated as mouse events are ignored", function()

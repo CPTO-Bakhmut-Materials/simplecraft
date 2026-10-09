@@ -27,9 +27,9 @@ Everything else uses mouse & keyboard. The mode is fixed for the session.
 
 | Touch | Action |
 |---|---|
-| Drag on the left half | Move (joystick appears under your thumb) |
-| Drag on the right half | Look around |
-| Up / Down (hold) | Fly up / down |
+| Arrow keys, bottom-left (hold) | Move forward / back / left / right (slide between them to change direction) |
+| Drag anywhere else | Look around |
+| ▲▲ / ▼▼ (hold) | Fly up / down |
 | Break / Place (tap) | Break block / place dirt at the crosshair |
 | Top-right button (tap) | Toggle fullscreen (browser; native Android/iOS are always fullscreen) |
 
@@ -95,8 +95,8 @@ every lua-language-server diagnostic enabled in `.luarc.json` is an error, and C
 | `src/math/` | `Vec3` (positions, directions), `Extent3` (grid sizes), `Mat4` (matrices) |
 | `src/raycast.lua` | Voxel ray traversal for block picking |
 | `src/input.lua` | Mouse & keyboard or touch input; turns LÖVE events into per-frame movement, look and actions |
-| `src/touch_controls.lua` | Touch gestures: floating joystick, look drag, held buttons |
-| `src/hud.lua` | Crosshair, touch joystick and buttons: layout, hit testing, drawing |
+| `src/touch_controls.lua` | Touch gestures: held direction keys and buttons, look drag |
+| `src/hud.lua` | Crosshair, touch direction keys and buttons: layout, hit testing, drawing |
 | `src/config.lua` | Tunables and key bindings |
 | `tools/` | Test-world generator, `.vox` writer, web build (`build_web.sh`, `web/index.html`, icons) |
 
