@@ -9,13 +9,6 @@ local function newHud(width, height)
     return hud
 end
 
-t.test("hud: toggle sits in the top-right corner, inside the screen", function()
-    local toggle = newHud().toggle
-    t.ok(toggle.x > WIDTH / 2, "on the right half")
-    t.ok(toggle.y + toggle.height < HEIGHT / 4, "near the top")
-    t.ok(toggle.x + toggle.width <= WIDTH and toggle.y >= 0, "inside the screen")
-end)
-
 t.test("hud: buttons sit in the bottom-right corner, inside the screen", function()
     local hud = newHud()
     t.eq(#hud.buttons, 4)
@@ -25,11 +18,8 @@ t.test("hud: buttons sit in the bottom-right corner, inside the screen", functio
     end
 end)
 
-t.test("hud: hit test finds the toggle and each button", function()
+t.test("hud: hit test finds each button", function()
     local hud = newHud()
-    local toggle = hud.toggle
-    t.eq(hud:hitTest(toggle.x + toggle.width / 2, toggle.y + toggle.height / 2), "toggle")
-    t.eq(hud:hitTest(toggle.x - 5, toggle.y - 5), "toggle", "padding just outside the corner")
     for _, button in ipairs(hud.buttons) do
         t.eq(hud:hitTest(button.x, button.y), button.name)
         t.eq(hud:hitTest(button.x + button.radius * 1.1, button.y), button.name, "slightly outside the circle")
@@ -44,11 +34,13 @@ end)
 
 t.test("hud: layout scales with the shorter screen side", function()
     local hud = newHud()
-    local joystick, toggleWidth = hud.joystickRadius, hud.toggle.width
+    local joystick, buttonRadius = hud.joystickRadius, hud.buttons[1].radius
     hud:resize(WIDTH * 2, HEIGHT * 2)
     t.near(hud.joystickRadius, joystick * 2)
-    t.near(hud.toggle.width, toggleWidth * 2)
+    t.near(hud.buttons[1].radius, buttonRadius * 2)
     hud:resize(HEIGHT, WIDTH) -- portrait: the unit is now the width
     t.eq(hud.unit, HEIGHT)
-    t.ok(hud.toggle.x + hud.toggle.width <= HEIGHT, "toggle still inside")
+    for _, button in ipairs(hud.buttons) do
+        t.ok(button.x + button.radius <= HEIGHT, button.name .. " still inside")
+    end
 end)

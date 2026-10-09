@@ -1,7 +1,8 @@
 --- Entry point: loads the world and wires camera, renderer, input and HUD together.
 -- Usage: `love . [path/to/world.vox] [--touch]`
--- `--touch` starts with the on-screen touch controls (the web page passes it on
--- touch-first devices; Android and iOS always start with them). See src/input.lua.
+-- `--touch` uses the on-screen touch controls instead of mouse & keyboard (the
+-- web page passes it on phones and tablets; Android and iOS always use them).
+-- See src/input.lua.
 
 local Blocks = require("src.blocks")
 local Camera = require("src.camera")
@@ -145,10 +146,16 @@ function love.draw()
 end
 
 function love.keypressed(key)
-    input:keypressed(key)
-    -- In a browser, Esc already releases the mouse and quitting would just freeze the page.
-    if key == Config.keys.quit and love.system.getOS() ~= "Web" then
+    -- In a browser, the page handles these keys: Esc releases the mouse (quitting
+    -- would just freeze the page) and the fullscreen key uses the page's own
+    -- fullscreen, which works more reliably than the game's window there.
+    if love.system.getOS() == "Web" then
+        return
+    end
+    if key == Config.keys.quit then
         love.event.quit()
+    elseif key == Config.keys.fullscreen then
+        love.window.setFullscreen(not love.window.getFullscreen())
     end
 end
 

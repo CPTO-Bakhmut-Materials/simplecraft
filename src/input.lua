@@ -1,11 +1,10 @@
 --- Turns LÖVE's keyboard, mouse and touch events into one result per frame.
 --
--- Input is in one of two modes, never chosen on the fly: mouse & keyboard
--- (captured mouse looks, WASD moves, clicks break/place) or touch (the
--- on-screen controls, see src/touch_controls.lua). Only the HUD toggle or the
--- toggle key switches, and each mode reads only its own input. In touch mode
--- the left mouse button acts as a finger, so the touch controls also work with
--- a mouse; in mouse mode, touches only reach the toggle.
+-- The input mode is fixed for the whole session: touch (the on-screen
+-- controls, see src/touch_controls.lua) on phones and tablets, mouse & keyboard
+-- (captured mouse looks, WASD moves, clicks break/place) everywhere else. Each
+-- mode reads only its own input. In touch mode the left mouse button acts as a
+-- finger, so `love . --touch` can be tried on a desktop.
 
 local Config = require("src.config")
 local TouchControls = require("src.touch_controls")
@@ -22,7 +21,6 @@ local TouchControls = require("src.touch_controls")
 --- @field actions BlockAction[] Oldest first.
 
 --- @class Input
---- @field hud Hud Layout, for hit-testing the toggle and buttons.
 --- @field touch TouchControls
 --- @field touchMode boolean
 --- @field mouseYaw number Mouse look since the last frame, radians.
@@ -33,28 +31,17 @@ Input.__index = Input
 
 local MOUSE_TOUCH_ID = "mouse" -- touch id for the mouse acting as a finger
 
---- @param hud Hud
---- @param touchMode boolean Starting mode.
+--- @param hud Hud Layout of the touch controls.
+--- @param touchMode boolean
 --- @return Input
 function Input.new(hud, touchMode)
     local self = setmetatable({
-        hud = hud,
         touch = TouchControls.new(hud),
         touchMode = touchMode,
         mouseYaw = 0, mousePitch = 0, mouseActions = {},
     }, Input)
     love.mouse.setRelativeMode(not touchMode)
     return self
-end
-
---- Switches modes and drops input pending from the old one. The mouse is left
---- uncaptured either way: in mouse mode the next click captures it.
---- @param enabled boolean
-function Input:setTouchMode(enabled)
-    self.touchMode = enabled
-    self.touch:reset()
-    self.mouseYaw, self.mousePitch, self.mouseActions = 0, 0, {}
-    love.mouse.setRelativeMode(false)
 end
 
 --- @param positiveKey love.KeyConstant
@@ -88,15 +75,15 @@ function Input:takeFrame()
     return frame
 end
 
--- Fingers, and the mouse acting as one in touch mode, go through these.
+-- LÖVE callbacks, forwarded from main.lua. Touches also arrive as emulated
+-- mouse events (`istouch`); the mouse callbacks ignore those, since the touch
+-- callbacks already handle them.
 
 --- @param id any
 --- @param x number
 --- @param y number
-function Input:pointerPressed(id, x, y)
-    if self.hud:hitTest(x, y) == "toggle" then
-        self:setTouchMode(not self.touchMode)
-    elseif self.touchMode then
+function Input:touchpressed(id, x, y)
+    if self.touchMode then
         self.touch:pressed(id, x, y)
     end
 end
@@ -106,30 +93,10 @@ end
 --- @param y number
 --- @param dx number
 --- @param dy number
-function Input:pointerMoved(id, x, y, dx, dy)
+function Input:touchmoved(id, x, y, dx, dy)
     if self.touchMode then
         self.touch:moved(id, x, y, dx, dy)
     end
-end
-
--- LÖVE callbacks, forwarded from main.lua. Touches also arrive as emulated
--- mouse events (`istouch`); the mouse callbacks ignore those, since the touch
--- callbacks already handle them.
-
---- @param id any
---- @param x number
---- @param y number
-function Input:touchpressed(id, x, y)
-    self:pointerPressed(id, x, y)
-end
-
---- @param id any
---- @param x number
---- @param y number
---- @param dx number
---- @param dy number
-function Input:touchmoved(id, x, y, dx, dy)
-    self:pointerMoved(id, x, y, dx, dy)
 end
 
 --- @param id any
@@ -147,7 +114,7 @@ function Input:mousemoved(x, y, dx, dy, istouch)
         return
     end
     if self.touchMode then
-        self:pointerMoved(MOUSE_TOUCH_ID, x, y, dx, dy)
+        self.touch:moved(MOUSE_TOUCH_ID, x, y, dx, dy)
     elseif love.mouse.getRelativeMode() then
         self.mouseYaw = self.mouseYaw - dx * Config.mouseSensitivity
         self.mousePitch = self.mousePitch - dy * Config.mouseSensitivity
@@ -164,15 +131,10 @@ function Input:mousepressed(x, y, button, istouch)
     end
     if self.touchMode then
         if button == 1 then
-            self:pointerPressed(MOUSE_TOUCH_ID, x, y)
+            self.touch:pressed(MOUSE_TOUCH_ID, x, y)
         end
     elseif not love.mouse.getRelativeMode() then
-        -- The cursor is visible, so it can reach the toggle; any other click only captures the mouse.
-        if self.hud:hitTest(x, y) == "toggle" then
-            self:setTouchMode(true)
-        else
-            love.mouse.setRelativeMode(true)
-        end
+        love.mouse.setRelativeMode(true) -- a click on the uncaptured window only recaptures the mouse
     elseif button == Config.mouseButtons.breakBlock then
         self.mouseActions[#self.mouseActions + 1] = "break"
     elseif button == Config.mouseButtons.placeBlock then
@@ -185,13 +147,6 @@ end
 function Input:mousereleased(button, istouch)
     if self.touchMode and not istouch and button == 1 then
         self.touch:released(MOUSE_TOUCH_ID)
-    end
-end
-
---- @param key love.KeyConstant
-function Input:keypressed(key)
-    if key == Config.keys.toggleInput then
-        self:setTouchMode(not self.touchMode)
     end
 end
 

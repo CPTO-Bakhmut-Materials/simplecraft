@@ -1,5 +1,5 @@
---- Everything drawn over the world: the crosshair, the input-mode toggle in the
---- top-right corner, and (in touch mode) the joystick and buttons.
+--- Everything drawn over the world: the crosshair and, in touch mode, the
+--- joystick and buttons.
 --
 -- The HUD owns the on-screen layout: Hud:resize places every element for the
 -- current screen and Hud:hitTest tells what is under a point. Sizes are
@@ -9,19 +9,12 @@
 -- Labels are drawn shapes, not text, so the HUD does not depend on fonts.
 
 --- @alias HudButtonName BlockAction|"up"|"down"
---- @alias HudTarget HudButtonName|"toggle"
 
 --- @class HudButton
 --- @field name HudButtonName
 --- @field x number Center, in pixels.
 --- @field y number
 --- @field radius number
-
---- @class HudRect
---- @field x number Top-left corner, in pixels.
---- @field y number
---- @field width number
---- @field height number
 
 --- @class Hud
 --- @field width number Screen size the layout was computed for.
@@ -31,7 +24,6 @@
 --- @field joystickHomeX number Where the idle joystick is drawn.
 --- @field joystickHomeY number
 --- @field buttons HudButton[] Touch buttons, bottom-right.
---- @field toggle HudRect Input-mode toggle, top-right.
 local Hud = {}
 Hud.__index = Hud
 
@@ -39,8 +31,6 @@ Hud.__index = Hud
 local MARGIN = 0.05 -- from the screen edges
 local JOYSTICK_RADIUS = 0.14
 local BUTTON_RADIUS = 0.075
-local TOGGLE_WIDTH, TOGGLE_HEIGHT = 0.2, 0.09
-local TOGGLE_HIT_PADDING = 0.02 -- the toggle accepts touches slightly outside it
 local CROSSHAIR_SIZE = 0.012
 
 local BUTTON_SPACING = 2.4 -- distance between button centers, in button radii
@@ -79,22 +69,13 @@ function Hud:resize(width, height)
         { name = "up", x = right, y = bottom - step, radius = radius },
         { name = "down", x = right - step, y = bottom - step, radius = radius },
     }
-
-    local toggleWidth, toggleHeight = TOGGLE_WIDTH * unit, TOGGLE_HEIGHT * unit
-    self.toggle = { x = width - margin - toggleWidth, y = margin, width = toggleWidth, height = toggleHeight }
 end
 
---- What is under a screen point: "toggle", a touch button's name, or nil.
---- Touch buttons are reported in either input mode; callers decide what applies.
+--- The touch button under a screen point, or nil.
 --- @param x number
 --- @param y number
---- @return HudTarget?
+--- @return HudButtonName?
 function Hud:hitTest(x, y)
-    local toggle, padding = self.toggle, TOGGLE_HIT_PADDING * self.unit
-    if x >= toggle.x - padding and x <= toggle.x + toggle.width + padding
-        and y >= toggle.y - padding and y <= toggle.y + toggle.height + padding then
-        return "toggle"
-    end
     for _, button in ipairs(self.buttons) do
         local dx, dy, reach = x - button.x, y - button.y, button.radius * BUTTON_HIT_SCALE
         if dx * dx + dy * dy <= reach * reach then
@@ -126,24 +107,6 @@ local function drawButtonIcon(name, x, y, s)
     end
 end
 
---- Mouse icon: a rounded body with a line between the buttons. Half-height `s`.
---- @param x number
---- @param y number
---- @param s number
-local function drawMouseIcon(x, y, s)
-    love.graphics.rectangle("line", x - s * 0.6, y - s, s * 1.2, s * 2, s * 0.6)
-    love.graphics.line(x, y - s, x, y - s * 0.3)
-end
-
---- Phone icon: a tall rounded body with a home button. Half-height `s`.
---- @param x number
---- @param y number
---- @param s number
-local function drawPhoneIcon(x, y, s)
-    love.graphics.rectangle("line", x - s * 0.55, y - s, s * 1.1, s * 2, s * 0.2)
-    love.graphics.circle("fill", x, y + s * 0.65, s * 0.15)
-end
-
 function Hud:drawCrosshair()
     local graphics = love.graphics
     local cx, cy, size = self.width / 2, self.height / 2, math.max(8, CROSSHAIR_SIZE * self.unit)
@@ -151,28 +114,6 @@ function Hud:drawCrosshair()
     graphics.setColor(1, 1, 1, 0.9)
     graphics.line(cx - size, cy, cx + size, cy)
     graphics.line(cx, cy - size, cx, cy + size)
-end
-
---- Two-part pill: mouse icon left, phone icon right, active mode highlighted.
---- @param touchMode boolean
-function Hud:drawToggle(touchMode)
-    local graphics = love.graphics
-    local rect = self.toggle
-    local half, radius = rect.width / 2, rect.height / 2
-    local iconSize, centerY = rect.height * 0.3, rect.y + radius
-    graphics.setLineWidth(math.max(2, rect.height * 0.06))
-
-    graphics.setColor(0, 0, 0, 0.25)
-    graphics.rectangle("fill", rect.x, rect.y, rect.width, rect.height, radius)
-    graphics.setColor(1, 1, 1, 0.35)
-    graphics.rectangle("fill", touchMode and rect.x + half or rect.x, rect.y, half, rect.height, radius)
-    graphics.setColor(1, 1, 1, 0.6)
-    graphics.rectangle("line", rect.x, rect.y, rect.width, rect.height, radius)
-
-    graphics.setColor(1, 1, 1, touchMode and 0.6 or 1)
-    drawMouseIcon(rect.x + half / 2, centerY, iconSize)
-    graphics.setColor(1, 1, 1, touchMode and 1 or 0.6)
-    drawPhoneIcon(rect.x + half * 1.5, centerY, iconSize)
 end
 
 --- Joystick (where it is held, or at its home position when idle) and buttons.
@@ -216,7 +157,6 @@ function Hud:draw(touchMode, touch)
     if touchMode then
         self:drawTouchControls(touch)
     end
-    self:drawToggle(touchMode)
     love.graphics.pop()
 end
 

@@ -53,6 +53,32 @@
       pointer-events: none;
       transition: opacity 1s;
     }
+    /* Fullscreen button for touch devices (they have no G key); shown by the script below. */
+    #fullscreen {
+      display: none;
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      width: 44px;
+      height: 44px;
+      padding: 10px;
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      touch-action: manipulation;
+    }
+    #fullscreen svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    #fullscreen .exit, #fullscreen.active .enter {
+      display: none;
+    }
+    #fullscreen.active .exit {
+      display: block;
+    }
     #rotate {
       display: none;
     }
@@ -75,27 +101,69 @@
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
   </main>
   <div id="status">Downloading…</div>
-  <div id="hint">Click to capture the mouse · WASD + Space/Shift to fly · Left click break · Right click place · Esc releases the mouse · Tab or the top-right button: touch controls</div>
+  <div id="hint">Click to capture the mouse · WASD + Space/Shift to fly · Left click break · Right click place · Esc releases the mouse · G toggles fullscreen</div>
+  <button id="fullscreen" type="button" aria-label="Toggle fullscreen">
+    <svg class="enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6"/>
+    </svg>
+    <svg class="exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <path d="M9 3v6H3M15 3v6h6M9 21v-6H3M15 21v-6h6"/>
+    </svg>
+  </button>
   <div id="rotate">Rotate your device to landscape</div>
 
   <script>
     var statusElement = document.getElementById("status");
     var canvas = document.getElementById("canvas");
-    // Touch-first devices (phones, tablets) start with the on-screen controls.
-    // The button in the top-right corner switches between touch and
-    // mouse/keyboard controls on any device.
-    var startWithTouch = window.matchMedia("(pointer: coarse)").matches;
-    if (startWithTouch) {
+    // Phones and tablets (touch-first devices) use the on-screen controls;
+    // everything else uses mouse & keyboard.
+    var touchDevice = window.matchMedia("(pointer: coarse)").matches;
+    if (touchDevice) {
       document.getElementById("hint").textContent =
-        "Left side: move · Right side: look · Buttons: fly up/down, break, place · Top-right: mouse & keyboard";
+        "Left side: move · Right side: look · Buttons: fly up/down, break, place · Top-right: fullscreen";
     }
 
-    // Keep keys the game uses from scrolling the page or moving focus (Tab).
+    // Keep keys the game uses from scrolling the page.
     window.addEventListener("keydown", function (e) {
-      if ([" ", "Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) !== -1) {
+      if ([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) !== -1) {
         e.preventDefault();
       }
     });
+    // Fullscreen: the G key (keys.fullscreen in src/config.lua) and, on touch
+    // devices, the button. The page does it, not the game: the browser's own
+    // fullscreen of the whole page keeps the canvas CSS above in charge, so the
+    // game stays 16:9 and letterboxed. Safari on iPad only has the prefixed API;
+    // Safari on iPhone has none, so the button stays hidden there.
+    var root = document.documentElement;
+    var fullscreenSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+    function fullscreenElement() {
+      return document.fullscreenElement || document.webkitFullscreenElement;
+    }
+    function toggleFullscreen() {
+      if (fullscreenElement()) {
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      } else {
+        var request = (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+        if (request) {
+          request.catch(function () {});
+        }
+      }
+    }
+    window.addEventListener("keydown", function (e) {
+      if (fullscreenSupported && e.key.toLowerCase() === "g" && !e.repeat) {
+        toggleFullscreen();
+      }
+    });
+    var fullscreenButton = document.getElementById("fullscreen");
+    if (touchDevice && fullscreenSupported) {
+      fullscreenButton.style.display = "block";
+      fullscreenButton.addEventListener("click", toggleFullscreen);
+      ["fullscreenchange", "webkitfullscreenchange"].forEach(function (name) {
+        document.addEventListener(name, function () {
+          fullscreenButton.classList.toggle("active", !!fullscreenElement());
+        });
+      });
+    }
     window.addEventListener("click", function () { window.focus(); });
     setTimeout(function () { document.getElementById("hint").style.opacity = 0; }, 10000);
 
@@ -105,7 +173,7 @@
     });
 
     var Module = {
-      arguments: startWithTouch ? ["./game.love", "--touch"] : ["./game.love"],
+      arguments: touchDevice ? ["./game.love", "--touch"] : ["./game.love"],
       INITIAL_MEMORY: {{memory}},
       canvas: canvas,
       printErr: console.error.bind(console),

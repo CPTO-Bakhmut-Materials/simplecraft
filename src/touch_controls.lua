@@ -43,7 +43,7 @@ end
 function TouchControls:pressed(id, x, y)
     local touch = { kind = "look", originX = x, originY = y, x = x, y = y }
     local target = self.hud:hitTest(x, y)
-    if target and target ~= "toggle" then
+    if target then
         touch.kind, touch.button = "button", target
         if target == "break" or target == "place" then
             --- @cast target BlockAction
@@ -75,12 +75,6 @@ end
 --- @param id any
 function TouchControls:released(id)
     self.touches[id] = nil
-end
-
---- Forgets all touches and pending input, e.g. when touch controls are turned off.
-function TouchControls:reset()
-    self.touches, self.actions = {}, {}
-    self.lookX, self.lookY = 0, 0
 end
 
 --- Joystick knob offset from its origin, clamped to the joystick radius.
