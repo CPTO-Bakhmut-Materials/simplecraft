@@ -5,18 +5,18 @@
 
 local Config = require("src.config")
 
---- @class MouseKeyboard
+--- @class MouseKeyboardInput
 --- @field yaw number Mouse look since the last frame, radians.
 --- @field pitch number
 --- @field actions BlockAction[] Clicks since the last frame.
-local MouseKeyboard = {}
-MouseKeyboard.__index = MouseKeyboard
+local MouseKeyboardInput = {}
+MouseKeyboardInput.__index = MouseKeyboardInput
 
 --- Captures the mouse.
---- @return MouseKeyboard
-function MouseKeyboard.new()
+--- @return MouseKeyboardInput
+function MouseKeyboardInput.new()
     love.mouse.setRelativeMode(true)
-    return setmetatable({ yaw = 0, pitch = 0, actions = {} }, MouseKeyboard)
+    return setmetatable({ yaw = 0, pitch = 0, actions = {} }, MouseKeyboardInput)
 end
 
 --- @param positiveKey love.KeyConstant
@@ -28,7 +28,7 @@ end
 
 --- Returns this frame's input and clears what was collected for it.
 --- @return InputFrame
-function MouseKeyboard:takeFrame()
+function MouseKeyboardInput:takeFrame()
     local keys = Config.keys
     local frame = {
         forward = axis(keys.forward, keys.back), right = axis(keys.right, keys.left), up = axis(keys.up, keys.down),
@@ -46,7 +46,7 @@ end
 --- @param dx number
 --- @param dy number
 --- @param istouch boolean
-function MouseKeyboard:mousemoved(dx, dy, istouch)
+function MouseKeyboardInput:mousemoved(dx, dy, istouch)
     if not istouch and love.mouse.getRelativeMode() then
         self.yaw = self.yaw - dx * Config.mouseSensitivity
         self.pitch = self.pitch - dy * Config.mouseSensitivity
@@ -55,7 +55,7 @@ end
 
 --- @param button number
 --- @param istouch boolean
-function MouseKeyboard:mousepressed(button, istouch)
+function MouseKeyboardInput:mousepressed(button, istouch)
     if istouch then
         return
     end
@@ -69,7 +69,7 @@ function MouseKeyboard:mousepressed(button, istouch)
 end
 
 --- @param key love.KeyConstant
-function MouseKeyboard:keypressed(key) -- luacheck: ignore 212/self (a method like the other callbacks)
+function MouseKeyboardInput:keypressed(key)
     -- In a browser, the page handles these keys: Esc releases the mouse (quitting
     -- would just freeze the page) and the fullscreen key uses the page's own
     -- fullscreen, which works more reliably than the game's window there.
@@ -84,13 +84,13 @@ function MouseKeyboard:keypressed(key) -- luacheck: ignore 212/self (a method li
 end
 
 --- Mouse & keyboard have no on-screen controls (the crosshair is drawn by the game).
-function MouseKeyboard:draw() end -- luacheck: ignore 212/self (same interface as the touch controls)
+function MouseKeyboardInput:draw() end
 
 --- @param focused boolean
-function MouseKeyboard:focus(focused) -- luacheck: ignore 212/self (a method like the other callbacks)
+function MouseKeyboardInput:focus(focused)
     if not focused then
         love.mouse.setRelativeMode(false)
     end
 end
 
-return MouseKeyboard
+return MouseKeyboardInput

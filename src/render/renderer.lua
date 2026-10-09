@@ -81,21 +81,33 @@ function Renderer:markChunkDirty(chunk)
     end
 end
 
---- Call after changing the block at `block`. Also refreshes neighboring
---- chunks when the block sits on a chunk border, since their faces may change.
+--- The chunks whose meshes can change when `block` changes: its own chunk, plus
+--- each neighboring chunk it shares a face with (when it sits on a chunk border,
+--- the neighbor's face against it may appear or disappear). May include chunks
+--- outside the world.
 --- @param block Vec3 Integer block coordinates.
-function Renderer:blockChanged(block)
-    local size = self.chunkSize
-    local chunk = (block / size):floor()
-    local inChunk = block - chunk * size -- 0..size-1 on each axis
-    self:markChunkDirty(chunk)
+--- @param chunkSize integer
+--- @return Vec3[] Chunk coordinates.
+function Renderer.chunksTouching(block, chunkSize)
+    local chunk = (block / chunkSize):floor()
+    local inChunk = block - chunk * chunkSize -- 0..chunkSize-1 on each axis
+    local chunks = { chunk }
     for _, axis in ipairs(Vec3.AXES) do
         if inChunk[axis] == 0 then
-            self:markChunkDirty(chunk - Vec3.unit(axis))
+            chunks[#chunks + 1] = chunk - Vec3.unit(axis)
         end
-        if inChunk[axis] == size - 1 then
-            self:markChunkDirty(chunk + Vec3.unit(axis))
+        if inChunk[axis] == chunkSize - 1 then
+            chunks[#chunks + 1] = chunk + Vec3.unit(axis)
         end
+    end
+    return chunks
+end
+
+--- Call after changing the block at `block`, to rebuild the affected chunks.
+--- @param block Vec3 Integer block coordinates.
+function Renderer:blockChanged(block)
+    for _, chunk in ipairs(Renderer.chunksTouching(block, self.chunkSize)) do
+        self:markChunkDirty(chunk)
     end
 end
 

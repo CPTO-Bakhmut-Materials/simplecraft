@@ -6,7 +6,7 @@
 -- handled. Either input hands its result to the game once per frame through
 -- takeFrame(), and draws its own on-screen controls with draw().
 
-local MouseKeyboard = require("src.input.mouse_keyboard")
+local MouseKeyboardInput = require("src.input.mouse_keyboard")
 local TouchInput = require("src.input.touch")
 
 --- @alias BlockAction "break"|"place"
@@ -25,7 +25,7 @@ local Input = {}
 
 --- Sets up the session's input and registers its LÖVE callbacks.
 --- @param touchMode boolean Touch controls instead of mouse & keyboard.
---- @return MouseKeyboard|TouchInput input Call takeFrame() and draw() on it once per frame.
+--- @return MouseKeyboardInput|TouchInput input Call takeFrame() and draw() on it once per frame.
 function Input.use(touchMode)
     if touchMode then
         local touch = TouchInput.new(love.graphics.getDimensions)
@@ -34,7 +34,7 @@ function Input.use(touchMode)
         function love.touchreleased(id) touch:released(id) end
         return touch
     end
-    local mouseKeyboard = MouseKeyboard.new()
+    local mouseKeyboard = MouseKeyboardInput.new()
     function love.mousemoved(_, _, dx, dy, istouch) mouseKeyboard:mousemoved(dx, dy, istouch) end
     function love.mousepressed(_, _, button, istouch) mouseKeyboard:mousepressed(button, istouch) end
     function love.keypressed(key) mouseKeyboard:keypressed(key) end

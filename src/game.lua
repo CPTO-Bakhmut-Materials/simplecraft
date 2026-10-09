@@ -11,11 +11,16 @@ local Renderer = require("src.render.renderer")
 local Vec3 = require("src.math.vec3")
 local WorldLoader = require("src.world.load")
 
+--- A change to one block, decided by Game.chooseEdit.
+--- @class BlockEdit
+--- @field block Vec3
+--- @field id BlockId What the block becomes.
+
 --- @class Game
 --- @field world World
 --- @field camera Camera
 --- @field renderer Renderer
---- @field input MouseKeyboard|TouchInput The session's one input (see src/input/).
+--- @field input MouseKeyboardInput|TouchInput The session's one input (see src/input/).
 local Game = {}
 Game.__index = Game
 
@@ -47,34 +52,39 @@ function Game.new(worldPath, touchMode)
     }, Game)
 end
 
---- @param block Vec3
---- @param id BlockId
-function Game:setBlock(block, id)
-    if self.world:set(block, id) then
-        self.renderer:blockChanged(block)
+--- The rules for breaking and placing: which block an action at the crosshair
+--- changes, and to what. Breaking clears the block the crosshair points at;
+--- placing puts dirt against the face it points at, unless that is where the
+--- camera is. Returns nil when the action does nothing.
+--- @param world World
+--- @param camera Camera
+--- @param action BlockAction
+--- @return BlockEdit?
+function Game.chooseEdit(world, camera, action)
+    local hit = Raycast.cast(function(block) return world:isSolid(block) end,
+        camera.position, camera:forward(), Config.reach)
+    if not hit then
+        return nil
     end
+    if action == "break" then
+        return { block = hit.block, id = Blocks.AIR }
+    end
+    if hit.normal == Vec3.ZERO then
+        return nil -- the camera is inside a block; there is no face to build on
+    end
+    local target = hit.block + hit.normal
+    if target == camera.position:floor() then
+        return nil -- don't build a block around the camera
+    end
+    return { block = target, id = Blocks.DIRT }
 end
 
 --- Breaks or places a block at the crosshair.
 --- @param action BlockAction
 function Game:interact(action)
-    local world, camera = self.world, self.camera
-    local hit = Raycast.cast(function(block) return world:isSolid(block) end,
-        camera.position, camera:forward(), Config.reach)
-    if not hit then
-        return
-    end
-
-    if action == "break" then
-        self:setBlock(hit.block, Blocks.AIR)
-    elseif action == "place" then
-        if hit.normal == Vec3.ZERO then
-            return -- camera is inside a block; there is no face to build on
-        end
-        local target = hit.block + hit.normal
-        if target ~= camera.position:floor() then
-            self:setBlock(target, Blocks.DIRT)
-        end
+    local edit = Game.chooseEdit(self.world, self.camera, action)
+    if edit and self.world:set(edit.block, edit.id) then
+        self.renderer:blockChanged(edit.block)
     end
 end
 

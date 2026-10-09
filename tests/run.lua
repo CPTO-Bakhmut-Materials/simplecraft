@@ -6,8 +6,11 @@ package.path = "./?/init.lua;" .. package.path
 local lib = require("tests.lib")
 
 local SUITES = {
-    "vec3", "extent3", "mat4", "vox", "world", "world_load", "mesher", "raycast", "camera", "touch_layout",
-    "touch", "mouse_keyboard", "input",
+    "vec3", "extent3", "mat4",
+    "vox", "world", "world_load", "raycast",
+    "camera", "mesher", "renderer",
+    "touch_layout", "touch", "mouse_keyboard", "input",
+    "game",
 }
 
 for _, name in ipairs(SUITES) do
