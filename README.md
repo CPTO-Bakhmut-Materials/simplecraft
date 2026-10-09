@@ -31,7 +31,7 @@ tools/build_web.sh                     # writes a static site to build/web (need
 python3 -m http.server -d build/web    # then open http://localhost:8000
 ```
 
-To host it on GitHub Pages, push to `main` and set **Settings → Pages → Source** to **GitHub Actions**;
+To host it on GitHub Pages, push to `master` and set **Settings → Pages → Source** to **GitHub Actions**;
 `.github/workflows/pages.yml` builds and deploys it. Alternatively, upload the contents of `build/web` to any static host.
 
 The build uses a [fork of love.js](https://github.com/cptobakhmut925-glitch/love.js) compiled with WebGL 2 support,
