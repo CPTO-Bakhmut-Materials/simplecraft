@@ -22,8 +22,8 @@ love . --touch                 # on-screen touch controls (the left mouse button
 | G | Toggle fullscreen |
 | Esc | Quit (in a browser: release the mouse) |
 
-Phones and tablets use on-screen touch controls instead: Android, iOS, and touch-first devices in a browser.
-Everything else uses mouse & keyboard. The mode is fixed for the session.
+In the browser, phones and tablets (touch-first devices) use on-screen touch controls instead;
+desktop browsers use mouse & keyboard. The mode is fixed for the session.
 
 | Touch | Action |
 |---|---|
@@ -31,7 +31,7 @@ Everything else uses mouse & keyboard. The mode is fixed for the session.
 | Drag anywhere else | Look around |
 | ▲▲ / ▼▼ (hold) | Fly up / down |
 | Break / Place (tap) | Break block / place dirt at the crosshair |
-| Top-right button (tap) | Toggle fullscreen (browser; native Android/iOS are always fullscreen) |
+| Top-right button (tap) | Toggle fullscreen |
 
 Edits live in memory only; the world file is never written.
 

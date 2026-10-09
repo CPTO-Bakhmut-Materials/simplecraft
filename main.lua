@@ -1,7 +1,7 @@
 --- Entry point: loads the world and wires camera, renderer, input and HUD together.
 -- Usage: `love . [path/to/world.vox] [--touch]`
 -- `--touch` uses the on-screen touch controls instead of mouse & keyboard (the
--- web page passes it on phones and tablets; Android and iOS always use them).
+-- web page passes it on phones and tablets).
 -- See src/input.lua.
 
 local Blocks = require("src.blocks")
@@ -116,13 +116,12 @@ end
 
 function love.load(args)
     local worldPath, touch = parseArgs(args)
-    local system = love.system.getOS()
 
     world = loadWorld(worldPath)
     camera = spawnCamera()
     renderer = Renderer.new(world, { chunkSize = Config.chunkSize, textureDir = Config.textureDir })
     hud:resize(love.graphics.getDimensions())
-    input = Input.new(hud, touch or system == "Android" or system == "iOS")
+    input = Input.new(hud, touch)
     love.graphics.setBackgroundColor(Config.skyColor)
 end
 

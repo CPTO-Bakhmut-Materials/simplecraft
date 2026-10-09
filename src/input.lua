@@ -1,10 +1,11 @@
 --- Turns LÖVE's keyboard, mouse and touch events into one result per frame.
 --
 -- The input mode is fixed for the whole session: touch (the on-screen
--- controls, see src/touch_controls.lua) on phones and tablets, mouse & keyboard
--- (captured mouse looks, WASD moves, clicks break/place) everywhere else. Each
--- mode reads only its own input. In touch mode the left mouse button acts as a
--- finger, so `love . --touch` can be tried on a desktop.
+-- controls, see src/touch_controls.lua) when started with `--touch`, which the
+-- web page passes on phones and tablets; mouse & keyboard (captured mouse looks,
+-- WASD moves, clicks break/place) otherwise. Each mode reads only its own input.
+-- In touch mode the left mouse button acts as a finger, so `love . --touch` can
+-- be tried on a desktop.
 
 local Config = require("src.config")
 local TouchControls = require("src.touch_controls")
