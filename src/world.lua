@@ -6,11 +6,21 @@
 
 local Blocks = require("src.blocks")
 
+--- @class World
+--- @field sizeX integer
+--- @field sizeY integer
+--- @field sizeZ integer
+--- @field blocks BlockId[] Flat grid, X fastest; see World:get.
 local World = {}
 World.__index = World
 
 local AIR = Blocks.AIR
 
+--- Creates a world filled with air.
+--- @param sizeX integer
+--- @param sizeY integer
+--- @param sizeZ integer
+--- @return World
 function World.new(sizeX, sizeY, sizeZ)
     assert(sizeX >= 1 and sizeY >= 1 and sizeZ >= 1, "world dimensions must be positive")
     local blocks = {}
@@ -21,7 +31,9 @@ function World.new(sizeX, sizeY, sizeZ)
 end
 
 --- Builds a world from a parsed .vox file (see src/vox.lua).
--- Uses the first model; voxel colors are mapped to block types by Blocks.fromColor.
+--- Uses the first model; voxel colors are mapped to block types by Blocks.fromColor.
+--- @param vox VoxFile
+--- @return World
 function World.fromVox(vox)
     if not vox.palette then
         error("world file has no color palette (RGBA chunk)", 0)
@@ -41,10 +53,18 @@ function World.fromVox(vox)
     return world
 end
 
+--- @param x integer
+--- @param y integer
+--- @param z integer
+--- @return boolean
 function World:inBounds(x, y, z)
     return x >= 0 and y >= 0 and z >= 0 and x < self.sizeX and y < self.sizeY and z < self.sizeZ
 end
 
+--- @param x integer
+--- @param y integer
+--- @param z integer
+--- @return BlockId
 function World:get(x, y, z)
     if not self:inBounds(x, y, z) then
         return AIR
@@ -52,11 +72,20 @@ function World:get(x, y, z)
     return self.blocks[x + self.sizeX * (y + self.sizeY * z) + 1]
 end
 
+--- @param x integer
+--- @param y integer
+--- @param z integer
+--- @return boolean
 function World:isSolid(x, y, z)
     return self:get(x, y, z) ~= AIR
 end
 
 --- Sets a block. Returns true if the world changed.
+--- @param x integer
+--- @param y integer
+--- @param z integer
+--- @param id BlockId
+--- @return boolean
 function World:set(x, y, z, id)
     if not self:inBounds(x, y, z) then
         return false

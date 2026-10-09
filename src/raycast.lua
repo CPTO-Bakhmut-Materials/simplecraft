@@ -1,5 +1,14 @@
 --- Voxel ray traversal (Amanatides & Woo, "A Fast Voxel Traversal Algorithm").
 
+--- @class RaycastHit
+--- @field x integer Block that was hit.
+--- @field y integer
+--- @field z integer
+--- @field nx integer Normal of the face the ray entered through; all 0 if the
+---   ray started inside a solid block.
+--- @field ny integer
+--- @field nz integer
+
 local Raycast = {}
 
 local function axisSetup(origin, direction)
@@ -21,8 +30,7 @@ end
 --- @param dy number
 --- @param dz number
 --- @param maxDistance number
---- @return table? hit `{ x, y, z, nx, ny, nz }` or nil. The normal is the face the ray
----   entered through; it is (0, 0, 0) if the origin is inside a solid block.
+--- @return RaycastHit? hit nil if nothing solid is within `maxDistance`.
 function Raycast.cast(isSolid, ox, oy, oz, dx, dy, dz, maxDistance)
     local x, stepX, tMaxX, tDeltaX = axisSetup(ox, dx)
     local y, stepY, tMaxY, tDeltaY = axisSetup(oy, dy)

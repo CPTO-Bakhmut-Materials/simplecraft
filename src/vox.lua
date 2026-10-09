@@ -5,6 +5,18 @@
 -- RGBA. Scene graph, material and layer chunks are skipped. Pure Lua, no LÖVE
 -- dependency, so it can be unit tested outside the engine.
 
+--- @class VoxModel
+--- @field sizeX integer
+--- @field sizeY integer
+--- @field sizeZ integer
+--- @field voxels integer[] Flat `{ x, y, z, colorIndex, ... }`, 0-based coordinates.
+--- @field count integer Number of voxels (`#voxels / 4`).
+
+--- @class VoxFile
+--- @field version integer
+--- @field models VoxModel[] At least one.
+--- @field palette integer[][]? Color index (1..255) -> `{ r, g, b, a }`; nil without an RGBA chunk.
+
 local Vox = {}
 
 local HEADER_SIZE = 12 -- chunk id (4) + content size (4) + children size (4)
@@ -60,10 +72,9 @@ local function readPalette(data, pos)
     return palette
 end
 
---- Parses the contents of a .vox file.
+--- Parses the contents of a .vox file. Errors on malformed input.
 --- @param data string Raw file bytes.
---- @return table `{ version, models = { {sizeX, sizeY, sizeZ, voxels, count}, ... }, palette }`
----   `palette` is nil when the file has no RGBA chunk. Errors on malformed input.
+--- @return VoxFile
 function Vox.parse(data)
     if type(data) ~= "string" or #data < 8 or data:sub(1, 4) ~= "VOX " then
         fail("not a MagicaVoxel file (missing 'VOX ' header)")

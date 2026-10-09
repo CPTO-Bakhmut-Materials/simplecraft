@@ -9,7 +9,9 @@ local Renderer = require("src.renderer")
 local Vox = require("src.vox")
 local World = require("src.world")
 
-local world, camera, renderer
+local world --- @type World
+local camera --- @type Camera
+local renderer --- @type Renderer
 
 --- Reads a file from the game directory, falling back to the OS filesystem
 -- so worlds outside the project can be passed on the command line.

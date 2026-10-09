@@ -4,6 +4,15 @@
 -- block names a texture layer for its top, side and bottom faces, plus a
 -- reference color used to classify voxels when loading a .vox file.
 
+--- @alias BlockId integer 0 is air; see the constants below.
+
+--- @class BlockDef
+--- @field name string
+--- @field color integer[] Reference `{ r, g, b }`, 0..255.
+--- @field top integer Texture layer for each face direction.
+--- @field side integer
+--- @field bottom integer
+
 local Blocks = {}
 
 Blocks.AIR = 0
@@ -16,6 +25,7 @@ Blocks.TEXTURES = { "stone.png", "dirt.png", "dirt_grass.png", "grass_top.png" }
 
 local LAYER_STONE, LAYER_DIRT, LAYER_GRASS_SIDE, LAYER_GRASS_TOP = 0, 1, 2, 3
 
+--- @type table<BlockId, BlockDef>
 Blocks.defs = {
     [Blocks.STONE] = {
         name = "stone", color = { 125, 125, 125 },
@@ -32,8 +42,12 @@ Blocks.defs = {
 }
 
 --- Returns the solid block whose reference color is closest to (r, g, b).
--- Voxel editors assign palette indices themselves, so classifying by color is
--- the only mapping that survives a round trip through an external tool.
+--- Voxel editors assign palette indices themselves, so classifying by color is
+--- the only mapping that survives a round trip through an external tool.
+--- @param r integer
+--- @param g integer
+--- @param b integer
+--- @return BlockId
 function Blocks.fromColor(r, g, b)
     local bestId, bestDistance = Blocks.STONE, math.huge
     for id, def in ipairs(Blocks.defs) do

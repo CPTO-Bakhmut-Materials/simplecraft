@@ -7,6 +7,8 @@
 
 local Blocks = require("src.blocks")
 
+--- @alias MeshVertex number[] `{ x, y, z, u, v, layer, r, g, b, a }`
+
 local Mesher = {}
 
 -- Corners are listed counter-clockwise as seen from outside, starting at the
@@ -57,7 +59,13 @@ local function emitFace(vertices, x, y, z, face, layer)
 end
 
 --- Returns the vertex list for the cube of blocks starting at (x0, y0, z0)
--- with edge length `size`, clipped to the world. May be empty.
+--- with edge length `size`, clipped to the world. May be empty.
+--- @param world World
+--- @param x0 integer
+--- @param y0 integer
+--- @param z0 integer
+--- @param size integer
+--- @return MeshVertex[]
 function Mesher.buildChunk(world, x0, y0, z0, size)
     local vertices = {}
     local x1 = math.min(x0 + size, world.sizeX) - 1

@@ -3,8 +3,15 @@
 -- "row" layout). Conventions follow OpenGL: right-handed view space looking
 -- down -Z, clip-space depth in [-1, 1].
 
+--- @alias Mat4 number[] 16 numbers, row-major.
+
 local Mat4 = {}
 
+--- @param fovY number Vertical field of view in radians.
+--- @param aspect number Width / height.
+--- @param near number
+--- @param far number
+--- @return Mat4
 function Mat4.perspective(fovY, aspect, near, far)
     local f = 1 / math.tan(fovY / 2)
     return {
@@ -25,7 +32,17 @@ local function cross(ax, ay, az, bx, by, bz)
 end
 
 --- View matrix for an eye at (ex, ey, ez) looking along direction (dx, dy, dz).
--- `dx, dy, dz` must not be parallel to the up vector (ux, uy, uz).
+--- `dx, dy, dz` must not be parallel to the up vector (ux, uy, uz).
+--- @param ex number
+--- @param ey number
+--- @param ez number
+--- @param dx number
+--- @param dy number
+--- @param dz number
+--- @param ux number
+--- @param uy number
+--- @param uz number
+--- @return Mat4
 function Mat4.lookAlong(ex, ey, ez, dx, dy, dz, ux, uy, uz)
     local zx, zy, zz = normalize(-dx, -dy, -dz)
     local xx, xy, xz = normalize(cross(ux, uy, uz, zx, zy, zz))
@@ -38,6 +55,10 @@ function Mat4.lookAlong(ex, ey, ez, dx, dy, dz, ux, uy, uz)
     }
 end
 
+--- Returns a * b.
+--- @param a Mat4
+--- @param b Mat4
+--- @return Mat4
 function Mat4.multiply(a, b)
     local out = {}
     for row = 0, 3 do
@@ -53,6 +74,11 @@ function Mat4.multiply(a, b)
 end
 
 --- Transforms the point (x, y, z, 1); returns x, y, z, w.
+--- @param m Mat4
+--- @param x number
+--- @param y number
+--- @param z number
+--- @return number, number, number, number
 function Mat4.transformPoint(m, x, y, z)
     return m[1] * x + m[2] * y + m[3] * z + m[4],
         m[5] * x + m[6] * y + m[7] * z + m[8],

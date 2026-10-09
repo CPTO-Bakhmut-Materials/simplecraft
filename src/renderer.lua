@@ -3,6 +3,20 @@
 local Blocks = require("src.blocks")
 local Mesher = require("src.mesher")
 
+--- @class RendererOptions
+--- @field chunkSize integer Chunk edge length in blocks.
+--- @field textureDir string Folder holding Blocks.TEXTURES.
+
+--- @class Renderer
+--- @field world World
+--- @field chunkSize integer
+--- @field chunksX integer
+--- @field chunksY integer
+--- @field chunksZ integer
+--- @field shader love.Shader
+--- @field textures love.Image Array image, one layer per Blocks.TEXTURES entry.
+--- @field meshes table<integer, love.Mesh> Chunk key -> mesh (absent for empty chunks).
+--- @field dirty table<integer, true> Chunk keys to rebuild on the next update.
 local Renderer = {}
 Renderer.__index = Renderer
 
@@ -29,9 +43,9 @@ void effect() {
 }
 ]]
 
---- @param world table See src/world.lua.
---- @param options table `{ chunkSize, textureDir }`
---- @return table
+--- @param world World
+--- @param options RendererOptions
+--- @return Renderer
 function Renderer.new(world, options)
     local paths = {}
     for i, name in ipairs(Blocks.TEXTURES) do
@@ -52,8 +66,8 @@ function Renderer.new(world, options)
         chunksZ = math.ceil(world.sizeZ / size),
         shader = love.graphics.newShader(PIXEL_SHADER, VERTEX_SHADER),
         textures = textures,
-        meshes = {}, -- chunk key -> Mesh (absent for empty chunks)
-        dirty = {}, -- chunk key -> true
+        meshes = {},
+        dirty = {},
     }, Renderer)
 
     for cz = 0, self.chunksZ - 1 do
@@ -66,6 +80,10 @@ function Renderer.new(world, options)
     return self
 end
 
+--- Queues a chunk for rebuilding; out-of-range chunks are ignored.
+--- @param cx integer
+--- @param cy integer
+--- @param cz integer
 function Renderer:markChunkDirty(cx, cy, cz)
     if cx >= 0 and cy >= 0 and cz >= 0 and cx < self.chunksX and cy < self.chunksY and cz < self.chunksZ then
         self.dirty[cx + self.chunksX * (cy + self.chunksY * cz)] = true
@@ -73,7 +91,10 @@ function Renderer:markChunkDirty(cx, cy, cz)
 end
 
 --- Call after changing the block at (x, y, z). Also refreshes neighboring
--- chunks when the block sits on a chunk border, since their faces may change.
+--- chunks when the block sits on a chunk border, since their faces may change.
+--- @param x integer
+--- @param y integer
+--- @param z integer
 function Renderer:blockChanged(x, y, z)
     local size = self.chunkSize
     local cx, cy, cz = math.floor(x / size), math.floor(y / size), math.floor(z / size)
@@ -87,6 +108,7 @@ function Renderer:blockChanged(x, y, z)
     if lz == size - 1 then self:markChunkDirty(cx, cy, cz + 1) end
 end
 
+--- @param key integer `cx + chunksX * (cy + chunksY * cz)`
 function Renderer:rebuildChunk(key)
     local cx = key % self.chunksX
     local cy = math.floor(key / self.chunksX) % self.chunksY
@@ -113,7 +135,7 @@ function Renderer:update()
     self.dirty = {}
 end
 
---- @param viewProjection table Row-major matrix from Camera:viewProjection.
+--- @param viewProjection Mat4 From Camera:viewProjection.
 function Renderer:draw(viewProjection)
     love.graphics.push("all")
     love.graphics.setShader(self.shader)
