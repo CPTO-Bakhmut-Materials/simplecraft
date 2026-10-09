@@ -9,7 +9,7 @@ set -euo pipefail
 
 # Fork of love.js whose LÖVE build uses WebGL 2 (array textures); installed from its GitHub tag
 # (not the npm registry). npm 12+ refuses git packages unless --allow-git permits it.
-LOVEJS_PACKAGE="github:cptobakhmut925-glitch/love.js#v11.4.1-webgl2"
+LOVEJS_PACKAGE="github:cptobakhmut925-glitch/love.js#v11.4.1-webgl2.1"
 # Initial WebAssembly heap; it grows on demand, but love.js needs a big enough start.
 MEMORY_BYTES=$((128 * 1024 * 1024))
 

@@ -81,7 +81,10 @@
     var canvas = document.getElementById("canvas");
     // Touch-first devices (phones, tablets) start with the on-screen controls.
     // Touch laptops report a fine primary pointer and get them on first touch.
-    var touchDevice = window.matchMedia("(pointer: coarse)").matches;
+    // Adding ?touch to the URL forces them on any device, with the mouse acting
+    // as a finger.
+    var forceTouch = new URLSearchParams(window.location.search).has("touch");
+    var touchDevice = forceTouch || window.matchMedia("(pointer: coarse)").matches;
     if (touchDevice) {
       document.getElementById("hint").textContent =
         "Left side: move · Right side: look · Buttons: fly up/down, break, place";
@@ -102,7 +105,7 @@
     });
 
     var Module = {
-      arguments: touchDevice ? ["./game.love", "--touch"] : ["./game.love"],
+      arguments: ["./game.love"].concat(forceTouch ? ["--force-touch"] : touchDevice ? ["--touch"] : []),
       INITIAL_MEMORY: {{memory}},
       canvas: canvas,
       printErr: console.error.bind(console),

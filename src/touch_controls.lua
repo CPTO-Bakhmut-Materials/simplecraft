@@ -6,6 +6,8 @@
 -- break/place a block when tapped. Several touches work at once.
 --
 -- Everything except TouchControls:draw is plain Lua, so it can be unit tested.
+-- Buttons show drawn icons rather than text: the love.js build can't create
+-- font textures (WebGL 2 lacks the texture swizzle LÖVE uses for them).
 -- Sizes scale with the shorter screen side ("unit"), so the layout works on
 -- any resolution.
 
@@ -14,7 +16,6 @@
 
 --- @class TouchButton
 --- @field name TouchButtonName
---- @field label string
 --- @field x number Center, in pixels.
 --- @field y number
 --- @field radius number
@@ -39,8 +40,6 @@
 --- @field lookX number View drag since the last takeLook, in units.
 --- @field lookY number
 --- @field actions TouchAction[] Taps since the last takeActions.
---- @field font love.Font? Created by draw for `fontUnit`.
---- @field fontUnit number?
 local TouchControls = {}
 TouchControls.__index = TouchControls
 
@@ -84,10 +83,10 @@ function TouchControls:resize(width, height)
     local right, bottom = width - margin - radius, height - margin - radius
     local step = BUTTON_SPACING * radius
     self.buttons = {
-        { name = "place", label = "Place", x = right, y = bottom, radius = radius },
-        { name = "break", label = "Break", x = right - step, y = bottom, radius = radius },
-        { name = "up", label = "Up", x = right, y = bottom - step, radius = radius },
-        { name = "down", label = "Down", x = right - step, y = bottom - step, radius = radius },
+        { name = "place", x = right, y = bottom, radius = radius },
+        { name = "break", x = right - step, y = bottom, radius = radius },
+        { name = "up", x = right, y = bottom - step, radius = radius },
+        { name = "down", x = right - step, y = bottom - step, radius = radius },
     }
 end
 
@@ -204,15 +203,29 @@ function TouchControls:takeActions()
     return actions
 end
 
+--- Icon for a button, centered on (x, y) with half-size `s`: triangles for
+--- up/down, a cross for break, a block (square) for place.
+--- @param name TouchButtonName
+--- @param x number
+--- @param y number
+--- @param s number
+local function drawIcon(name, x, y, s)
+    local graphics = love.graphics
+    if name == "up" then
+        graphics.polygon("fill", x, y - s, x + s, y + s * 0.7, x - s, y + s * 0.7)
+    elseif name == "down" then
+        graphics.polygon("fill", x, y + s, x + s, y - s * 0.7, x - s, y - s * 0.7)
+    elseif name == "break" then
+        graphics.line(x - s, y - s, x + s, y + s)
+        graphics.line(x - s, y + s, x + s, y - s)
+    else
+        graphics.rectangle("fill", x - s * 0.8, y - s * 0.8, s * 1.6, s * 1.6)
+    end
+end
+
 --- Draws the controls over the game. Needs LÖVE.
 function TouchControls:draw()
     local graphics = love.graphics
-    if self.fontUnit ~= self.unit then
-        self.font, self.fontUnit = graphics.newFont(math.max(10, math.floor(0.035 * self.unit))), self.unit
-    end
-    local font = self.font
-    --- @cast font love.Font
-
     graphics.push("all")
     graphics.setLineWidth(math.max(2, 0.006 * self.unit))
 
@@ -231,15 +244,15 @@ function TouchControls:draw()
     graphics.setColor(1, 1, 1, 0.6)
     graphics.circle("fill", knobX, knobY, self.joystickRadius * 0.4)
 
-    graphics.setFont(font)
     for _, button in ipairs(self.buttons) do
         graphics.setColor(1, 1, 1, self:isHeld(button.name) and 0.45 or 0.2)
         graphics.circle("fill", button.x, button.y, button.radius)
         graphics.setColor(1, 1, 1, 0.6)
         graphics.circle("line", button.x, button.y, button.radius)
         graphics.setColor(1, 1, 1, 0.9)
-        graphics.printf(button.label, button.x - button.radius, button.y - font:getHeight() / 2,
-            button.radius * 2, "center")
+        graphics.setLineWidth(math.max(3, 0.012 * self.unit))
+        drawIcon(button.name, button.x, button.y, button.radius * 0.4)
+        graphics.setLineWidth(math.max(2, 0.006 * self.unit))
     end
     graphics.pop()
 end

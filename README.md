@@ -9,6 +9,7 @@ Fly around a pre-built world, break blocks and place dirt. See [design.md](desig
 love .                         # loads assets/worlds/test.vox
 love . /path/to/world.vox      # loads any MagicaVoxel file
 love . --touch                 # starts with the on-screen touch controls
+love . --force-touch           # touch controls only; the left mouse button acts as a finger
 ```
 
 | Input | Action |
@@ -23,6 +24,8 @@ love . --touch                 # starts with the on-screen touch controls
 
 On touch screens, on-screen controls appear automatically. They show from the start on Android, iOS, and phones or tablets
 in a browser, and otherwise appear on the first touch. A mouse click switches back.
+To force them on any device, use `--force-touch`, or add `?touch` to the web build's URL
+(e.g. `http://localhost:8000/?touch`). The left mouse button then acts as a finger and the controls stay on.
 
 | Touch | Action |
 |---|---|

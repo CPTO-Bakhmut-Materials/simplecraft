@@ -1,7 +1,9 @@
 --- Entry point: wires world, camera, renderer and input together.
--- Usage: `love . [path/to/world.vox] [--touch]`
+-- Usage: `love . [path/to/world.vox] [--touch | --force-touch]`
 -- `--touch` shows the on-screen controls from the start (the web page passes it
--- on touch-first devices); otherwise they appear on the first touch.
+-- on touch-first devices); otherwise they appear on the first touch, and a mouse
+-- click switches back. `--force-touch` keeps them on for good and lets the left
+-- mouse button act as a finger, for trying the touch controls on a desktop.
 
 local Blocks = require("src.blocks")
 local Camera = require("src.camera")
@@ -18,6 +20,9 @@ local camera --- @type Camera
 local renderer --- @type Renderer
 local touch = TouchControls.new()
 local touchMode = false -- on-screen controls shown and the mouse left uncaptured
+local touchForced = false -- touch mode can't be left; the mouse emulates one finger
+
+local MOUSE_TOUCH_ID = "mouse" -- touch id for the emulated finger
 
 --- Reads a file from the game directory, falling back to the OS filesystem
 -- so worlds outside the project can be passed on the command line.
@@ -123,6 +128,8 @@ function love.load(args)
     for _, value in ipairs(args) do
         if value == "--touch" then
             touchMode = true
+        elseif value == "--force-touch" then
+            touchMode, touchForced = true, true
         else
             worldPath = value
         end
@@ -180,17 +187,29 @@ function love.touchreleased(id)
 end
 
 -- Touches also arrive as emulated mouse events (`istouch`); those are ignored
--- here because the touch callbacks above already handle them.
+-- here because the touch callbacks above already handle them. With
+-- --force-touch, the real mouse is routed to them instead.
 
-function love.mousemoved(_, _, dx, dy, istouch)
-    if not istouch and love.mouse.getRelativeMode() then
+function love.mousemoved(x, y, dx, dy, istouch)
+    if istouch then
+        return
+    end
+    if touchForced then
+        love.touchmoved(MOUSE_TOUCH_ID, x, y, dx, dy)
+    elseif love.mouse.getRelativeMode() then
         local sensitivity = Config.mouseSensitivity
         camera:rotate(-dx * sensitivity, -dy * sensitivity)
     end
 end
 
-function love.mousepressed(_, _, button, istouch)
+function love.mousepressed(x, y, button, istouch)
     if istouch then
+        return
+    end
+    if touchForced then
+        if button == 1 then
+            love.touchpressed(MOUSE_TOUCH_ID, x, y)
+        end
         return
     end
     if touchMode then
@@ -204,6 +223,12 @@ function love.mousepressed(_, _, button, istouch)
         interact("break")
     elseif button == Config.mouseButtons.placeBlock then
         interact("place")
+    end
+end
+
+function love.mousereleased(_, _, button, istouch)
+    if touchForced and not istouch and button == 1 then
+        love.touchreleased(MOUSE_TOUCH_ID)
     end
 end
 
