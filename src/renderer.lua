@@ -1,8 +1,8 @@
 --- Draws the world as one mesh per chunk, rebuilding chunks when blocks change.
 
 local Blocks = require("src.blocks")
-local Extent3 = require("src.math.extent3")
 local Mesher = require("src.mesher")
+local Vec3 = require("src.math.vec3")
 
 --- @class RendererOptions
 --- @field chunkSize integer Chunk edge length in blocks.
@@ -11,7 +11,7 @@ local Mesher = require("src.mesher")
 --- @class Renderer
 --- @field world World
 --- @field chunkSize integer
---- @field chunks Extent3 World size in chunks; chunk keys are `chunks:index(cx, cy, cz)`.
+--- @field chunks Extent3 World size in chunks; chunk keys are `chunks:index(chunk)`.
 --- @field shader love.Shader
 --- @field textures love.Image Array image, one layer per Blocks.TEXTURES entry.
 --- @field meshes table<integer, love.Mesh> Chunk key -> mesh (absent for empty chunks).
@@ -60,8 +60,7 @@ function Renderer.new(world, options)
     local self = setmetatable({
         world = world,
         chunkSize = size,
-        chunks = Extent3.new(
-            math.ceil(world.size.x / size), math.ceil(world.size.y / size), math.ceil(world.size.z / size)),
+        chunks = world.size:divideRoundingUp(size),
         shader = love.graphics.newShader(PIXEL_SHADER, VERTEX_SHADER),
         textures = textures,
         meshes = {},
@@ -75,12 +74,10 @@ function Renderer.new(world, options)
 end
 
 --- Queues a chunk for rebuilding; out-of-range chunks are ignored.
---- @param cx integer
---- @param cy integer
---- @param cz integer
-function Renderer:markChunkDirty(cx, cy, cz)
-    if self.chunks:contains(cx, cy, cz) then
-        self.dirty[self.chunks:index(cx, cy, cz)] = true
+--- @param chunk Vec3 Chunk coordinates (block coordinates / chunk size).
+function Renderer:markChunkDirty(chunk)
+    if self.chunks:contains(chunk) then
+        self.dirty[self.chunks:index(chunk)] = true
     end
 end
 
@@ -88,29 +85,30 @@ end
 --- chunks when the block sits on a chunk border, since their faces may change.
 --- @param block Vec3 Integer block coordinates.
 function Renderer:blockChanged(block)
-    local x, y, z = block.x, block.y, block.z
     local size = self.chunkSize
-    local cx, cy, cz = math.floor(x / size), math.floor(y / size), math.floor(z / size)
-    local lx, ly, lz = x % size, y % size, z % size
-    self:markChunkDirty(cx, cy, cz)
-    if lx == 0 then self:markChunkDirty(cx - 1, cy, cz) end
-    if lx == size - 1 then self:markChunkDirty(cx + 1, cy, cz) end
-    if ly == 0 then self:markChunkDirty(cx, cy - 1, cz) end
-    if ly == size - 1 then self:markChunkDirty(cx, cy + 1, cz) end
-    if lz == 0 then self:markChunkDirty(cx, cy, cz - 1) end
-    if lz == size - 1 then self:markChunkDirty(cx, cy, cz + 1) end
+    local chunk = (block / size):floor()
+    local inChunk = block - chunk * size -- 0..size-1 on each axis
+    self:markChunkDirty(chunk)
+    for _, axis in ipairs(Vec3.AXES) do
+        if inChunk[axis] == 0 then
+            self:markChunkDirty(chunk - Vec3.unit(axis))
+        end
+        if inChunk[axis] == size - 1 then
+            self:markChunkDirty(chunk + Vec3.unit(axis))
+        end
+    end
 end
 
 --- @param key integer See Renderer.chunks.
 function Renderer:rebuildChunk(key)
-    local cx, cy, cz = self.chunks:cell(key)
+    local chunk = self.chunks:cell(key)
     local size = self.chunkSize
 
     if self.meshes[key] then
         self.meshes[key]:release()
         self.meshes[key] = nil
     end
-    local vertices = Mesher.buildChunk(self.world, cx * size, cy * size, cz * size, size)
+    local vertices = Mesher.buildChunk(self.world, chunk * size, size)
     if #vertices > 0 then
         local mesh = love.graphics.newMesh(VERTEX_FORMAT, vertices, "triangles", "static")
         mesh:setTexture(self.textures)

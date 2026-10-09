@@ -70,8 +70,8 @@ end
 --- @param aspect number Viewport width / height.
 --- @return Mat4
 function Camera:viewProjection(aspect)
-    local view = Mat4.lookAlong(self.position, self:forward(), UP)
-    return Mat4.multiply(Mat4.perspective(self.fov, aspect, self.near, self.far), view)
+    local projection = Mat4.perspective(self.fov, aspect, self.near, self.far)
+    return projection * Mat4.lookAlong(self.position, self:forward(), UP)
 end
 
 return Camera

@@ -1,4 +1,7 @@
 --- Voxel ray traversal (Amanatides & Woo, "A Fast Voxel Traversal Algorithm").
+--
+-- The ray visits blocks in order: on each step it crosses into the next block
+-- along whichever axis has the nearest block boundary.
 
 local Vec3 = require("src.math.vec3")
 
@@ -9,43 +12,45 @@ local Vec3 = require("src.math.vec3")
 
 local Raycast = {}
 
-local function axisSetup(origin, direction)
-    local cell = math.floor(origin)
-    if direction > 0 then
-        return cell, 1, (cell + 1 - origin) / direction, 1 / direction
-    elseif direction < 0 then
-        return cell, -1, (origin - cell) / -direction, -1 / direction
-    end
-    return cell, 0, math.huge, math.huge
+--- @param value number
+--- @return integer -1, 0 or 1
+local function sign(value)
+    return value > 0 and 1 or (value < 0 and -1 or 0)
 end
 
 --- Finds the first solid block along a ray.
---- @param isSolid fun(x: integer, y: integer, z: integer): boolean
+--- @param isSolid fun(block: Vec3): boolean
 --- @param origin Vec3
 --- @param direction Vec3 Must be normalized so `maxDistance` is in blocks.
 --- @param maxDistance number
 --- @return RaycastHit? hit nil if nothing solid is within `maxDistance`.
 function Raycast.cast(isSolid, origin, direction, maxDistance)
-    local x, stepX, tMaxX, tDeltaX = axisSetup(origin.x, direction.x)
-    local y, stepY, tMaxY, tDeltaY = axisSetup(origin.y, direction.y)
-    local z, stepZ, tMaxZ, tDeltaZ = axisSetup(origin.z, direction.z)
-    local nx, ny, nz = 0, 0, 0
-    local distance = 0
+    local block = origin:floor()
+    -- Which way the ray moves through the grid on each axis.
+    local step = Vec3.fromAxes(function(axis) return sign(direction[axis]) end)
+    -- Ray distance between two block boundaries on each axis (infinite if the
+    -- ray is parallel to that axis's boundaries).
+    local boundarySpacing = Vec3.fromAxes(function(axis) return math.abs(1 / direction[axis]) end)
+    -- Ray distance to the next block boundary on each axis.
+    local nextBoundary = Vec3.fromAxes(function(axis)
+        if step[axis] == 0 then
+            return math.huge
+        end
+        local boundary = block[axis] + (step[axis] > 0 and 1 or 0)
+        return (boundary - origin[axis]) / direction[axis]
+    end)
 
+    local normal = Vec3.ZERO
+    local distance = 0
     while distance <= maxDistance do
-        if isSolid(x, y, z) then
-            return { block = Vec3.new(x, y, z), normal = Vec3.new(nx, ny, nz) }
+        if isSolid(block) then
+            return { block = block, normal = normal }
         end
-        if tMaxX < tMaxY and tMaxX < tMaxZ then
-            x, distance, tMaxX = x + stepX, tMaxX, tMaxX + tDeltaX
-            nx, ny, nz = -stepX, 0, 0
-        elseif tMaxY < tMaxZ then
-            y, distance, tMaxY = y + stepY, tMaxY, tMaxY + tDeltaY
-            nx, ny, nz = 0, -stepY, 0
-        else
-            z, distance, tMaxZ = z + stepZ, tMaxZ, tMaxZ + tDeltaZ
-            nx, ny, nz = 0, 0, -stepZ
-        end
+        local axis = nextBoundary:smallestAxis()
+        distance = nextBoundary[axis]
+        block = block + Vec3.unit(axis) * step[axis]
+        normal = Vec3.unit(axis) * -step[axis] -- the entered face points back against the step
+        nextBoundary = nextBoundary + Vec3.unit(axis) * boundarySpacing[axis]
     end
     return nil
 end

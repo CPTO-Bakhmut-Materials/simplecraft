@@ -1,6 +1,7 @@
 local t = require("tests.lib")
 local Blocks = require("src.blocks")
 local Extent3 = require("src.math.extent3")
+local Vec3 = require("src.math.vec3")
 local Mesher = require("src.mesher")
 local World = require("src.world")
 
@@ -8,35 +9,35 @@ local VERTICES_PER_FACE = 6
 
 t.test("mesher: lone block emits six faces", function()
     local world = World.new(Extent3.new(3, 3, 3))
-    world:set(1, 1, 1, Blocks.STONE)
-    t.eq(#Mesher.buildChunk(world, 0, 0, 0, 16), 6 * VERTICES_PER_FACE)
+    world:set(Vec3.new(1, 1, 1), Blocks.STONE)
+    t.eq(#Mesher.buildChunk(world, Vec3.ZERO, 16), 6 * VERTICES_PER_FACE)
 end)
 
 t.test("mesher: empty world emits nothing", function()
-    t.eq(#Mesher.buildChunk(World.new(Extent3.new(4, 4, 4)), 0, 0, 0, 16), 0)
+    t.eq(#Mesher.buildChunk(World.new(Extent3.new(4, 4, 4)), Vec3.ZERO, 16), 0)
 end)
 
 t.test("mesher: shared faces are culled", function()
     local world = World.new(Extent3.new(3, 3, 3))
-    world:set(0, 0, 0, Blocks.STONE)
-    world:set(1, 0, 0, Blocks.DIRT)
-    t.eq(#Mesher.buildChunk(world, 0, 0, 0, 16), 10 * VERTICES_PER_FACE)
+    world:set(Vec3.new(0, 0, 0), Blocks.STONE)
+    world:set(Vec3.new(1, 0, 0), Blocks.DIRT)
+    t.eq(#Mesher.buildChunk(world, Vec3.ZERO, 16), 10 * VERTICES_PER_FACE)
 end)
 
 t.test("mesher: culls against blocks in neighbouring chunks", function()
     local world = World.new(Extent3.new(4, 1, 1))
-    world:set(1, 0, 0, Blocks.STONE)
-    world:set(2, 0, 0, Blocks.STONE)
+    world:set(Vec3.new(1, 0, 0), Blocks.STONE)
+    world:set(Vec3.new(2, 0, 0), Blocks.STONE)
     -- Chunk size 2: block (1,0,0) is in chunk 0, its +X neighbour in chunk 1.
-    t.eq(#Mesher.buildChunk(world, 0, 0, 0, 2), 5 * VERTICES_PER_FACE)
+    t.eq(#Mesher.buildChunk(world, Vec3.ZERO, 2), 5 * VERTICES_PER_FACE)
 end)
 
 t.test("mesher: grass uses top, side and bottom layers", function()
     local world = World.new(Extent3.new(1, 1, 1))
-    world:set(0, 0, 0, Blocks.GRASS)
+    world:set(Vec3.new(0, 0, 0), Blocks.GRASS)
     local def = Blocks.defs[Blocks.GRASS]
     local layerByNormal = {}
-    local vertices = Mesher.buildChunk(world, 0, 0, 0, 16)
+    local vertices = Mesher.buildChunk(world, Vec3.ZERO, 16)
     for i = 1, #vertices, VERTICES_PER_FACE do
         local zs = vertices[i][3] + vertices[i + 1][3] + vertices[i + 2][3]
         local kind = (zs == 3 and "top") or (zs == 0 and "bottom") or "side"
@@ -49,8 +50,8 @@ end)
 
 t.test("mesher: triangles wind counter-clockwise seen from outside", function()
     local world = World.new(Extent3.new(1, 1, 1))
-    world:set(0, 0, 0, Blocks.STONE)
-    local vertices = Mesher.buildChunk(world, 0, 0, 0, 16)
+    world:set(Vec3.new(0, 0, 0), Blocks.STONE)
+    local vertices = Mesher.buildChunk(world, Vec3.ZERO, 16)
     for i = 1, #vertices, 3 do
         local a, b, c = vertices[i], vertices[i + 1], vertices[i + 2]
         local ux, uy, uz = b[1] - a[1], b[2] - a[2], b[3] - a[3]
@@ -66,8 +67,8 @@ end)
 
 t.test("mesher: side textures are upright", function()
     local world = World.new(Extent3.new(1, 1, 1))
-    world:set(0, 0, 0, Blocks.STONE)
-    for _, vertex in ipairs(Mesher.buildChunk(world, 0, 0, 0, 16)) do
+    world:set(Vec3.new(0, 0, 0), Blocks.STONE)
+    for _, vertex in ipairs(Mesher.buildChunk(world, Vec3.ZERO, 16)) do
         local isSideFace = vertex[7] < 1 and vertex[7] > 0.5
         if isSideFace then
             -- Texture v runs top (0) to bottom (1), so v must be 1 - z.

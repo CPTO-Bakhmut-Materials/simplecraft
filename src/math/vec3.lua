@@ -1,9 +1,11 @@
---- 3D vector for positions, directions and normals.
+--- 3D vector for positions, directions, normals and block/chunk coordinates.
 --
 -- Vectors are treated as immutable: operators and methods return new vectors,
 -- so one can be shared freely. Never assign to `x`, `y` or `z` after creation.
--- Each vector is a table, so hot loops (meshing, ray stepping, block access)
--- work on plain numbers instead.
+-- All 3D math in the game goes through Vec3; the code favors readability over
+-- avoiding the small table each vector costs.
+
+--- @alias Axis "x"|"y"|"z"
 
 --- @class Vec3
 --- @field x number
@@ -12,9 +14,14 @@
 --- @operator add(Vec3): Vec3
 --- @operator sub(Vec3): Vec3
 --- @operator mul(number): Vec3
+--- @operator div(number): Vec3
 --- @operator unm: Vec3
 local Vec3 = {}
 Vec3.__index = Vec3
+
+--- The three axes, for code that treats them alike (`v[axis]`).
+--- @type Axis[]
+Vec3.AXES = { "x", "y", "z" }
 
 --- @param x number
 --- @param y number
@@ -49,6 +56,13 @@ function Vec3.__mul(a, b)
     --- @cast a Vec3
     --- @cast b number
     return Vec3.new(a.x * b, a.y * b, a.z * b)
+end
+
+--- @param a Vec3
+--- @param b number
+--- @return Vec3
+function Vec3.__div(a, b)
+    return Vec3.new(a.x / b, a.y / b, a.z / b)
 end
 
 --- @param a Vec3
@@ -104,5 +118,34 @@ end
 function Vec3:floor()
     return Vec3.new(math.floor(self.x), math.floor(self.y), math.floor(self.z))
 end
+
+--- Builds a vector from a function of the axis name, for per-axis formulas.
+--- @param component fun(axis: Axis): number
+--- @return Vec3
+function Vec3.fromAxes(component)
+    return Vec3.new(component("x"), component("y"), component("z"))
+end
+
+--- Unit vector along an axis, e.g. `unit("y")` is (0, 1, 0).
+--- @param axis Axis
+--- @return Vec3
+function Vec3.unit(axis)
+    return Vec3.fromAxes(function(other) return other == axis and 1 or 0 end)
+end
+
+--- Axis with the smallest component; on a tie, the later axis (z over y over x).
+--- @return Axis
+function Vec3:smallestAxis()
+    local best = "x"
+    for _, axis in ipairs(Vec3.AXES) do
+        if self[axis] <= self[best] then
+            best = axis
+        end
+    end
+    return best
+end
+
+--- (0, 0, 0). Shared, like every vector, so never modify it.
+Vec3.ZERO = Vec3.new(0, 0, 0)
 
 return Vec3

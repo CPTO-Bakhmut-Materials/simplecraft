@@ -1,8 +1,9 @@
 --- Size of a 3D grid of cells, e.g. a world in blocks or a world in chunks.
 --
--- Cells have 0-based integer coordinates and are flattened with X varying
--- fastest, then Y, then Z (see Extent3:index). Immutable, like Vec3. Methods
--- take plain coordinates so they can be used inside hot loops.
+-- Cells have 0-based integer coordinates (Vec3s) and are flattened with X
+-- varying fastest, then Y, then Z (see Extent3:index). Immutable, like Vec3.
+
+local Vec3 = require("src.math.vec3")
 
 --- @class Extent3
 --- @field x integer Number of cells along each axis.
@@ -38,28 +39,32 @@ function Extent3:volume()
     return self.x * self.y * self.z
 end
 
---- @param x integer
---- @param y integer
---- @param z integer
---- @return boolean
-function Extent3:contains(x, y, z)
-    return x >= 0 and y >= 0 and z >= 0 and x < self.x and y < self.y and z < self.z
+--- Number of `divisor`-sized cells needed to cover this extent, e.g. a world
+--- size in blocks divided by the chunk size gives the world size in chunks.
+--- @param divisor integer
+--- @return Extent3
+function Extent3:divideRoundingUp(divisor)
+    return Extent3.new(math.ceil(self.x / divisor), math.ceil(self.y / divisor), math.ceil(self.z / divisor))
 end
 
---- Flat 0-based index of cell (x, y, z), which must be inside the extent.
---- @param x integer
---- @param y integer
---- @param z integer
+--- @param cell Vec3 Integer coordinates.
+--- @return boolean
+function Extent3:contains(cell)
+    return cell.x >= 0 and cell.y >= 0 and cell.z >= 0 and cell.x < self.x and cell.y < self.y and cell.z < self.z
+end
+
+--- Flat 0-based index of a cell, which must be inside the extent.
+--- @param cell Vec3 Integer coordinates.
 --- @return integer
-function Extent3:index(x, y, z)
-    return x + self.x * (y + self.y * z)
+function Extent3:index(cell)
+    return cell.x + self.x * (cell.y + self.y * cell.z)
 end
 
 --- Inverse of Extent3:index.
 --- @param index integer
---- @return integer x, integer y, integer z
+--- @return Vec3
 function Extent3:cell(index)
-    return index % self.x, math.floor(index / self.x) % self.y, math.floor(index / (self.x * self.y))
+    return Vec3.new(index % self.x, math.floor(index / self.x) % self.y, math.floor(index / (self.x * self.y)))
 end
 
 return Extent3

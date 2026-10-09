@@ -61,14 +61,16 @@ local function spawnCamera()
     })
 end
 
-local function isSolid(x, y, z)
-    return world:isSolid(x, y, z)
+--- @param block Vec3
+--- @return boolean
+local function isSolid(block)
+    return world:isSolid(block)
 end
 
 --- @param block Vec3
 --- @param id BlockId
 local function setBlock(block, id)
-    if world:set(block.x, block.y, block.z, id) then
+    if world:set(block, id) then
         renderer:blockChanged(block)
     end
 end
@@ -84,7 +86,7 @@ local function interact(action)
     if action == "break" then
         setBlock(hit.block, Blocks.AIR)
     elseif action == "place" then
-        if hit.normal == Vec3.new(0, 0, 0) then
+        if hit.normal == Vec3.ZERO then
             return -- camera is inside a block; there is no face to build on
         end
         local target = hit.block + hit.normal

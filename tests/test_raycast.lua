@@ -5,8 +5,9 @@ local Raycast = require("src.raycast")
 -- Centre of block (0, 0, 0), the origin of most test rays.
 local CENTER = Vec3.new(0.5, 0.5, 0.5)
 
-local function solidAt(bx, by, bz)
-    return function(x, y, z) return x == bx and y == by and z == bz end
+local function solidAt(x, y, z)
+    local solid = Vec3.new(x, y, z)
+    return function(block) return block == solid end
 end
 
 t.test("raycast: hits block ahead and reports entry face", function()

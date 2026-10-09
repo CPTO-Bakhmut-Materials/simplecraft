@@ -6,37 +6,45 @@
 -- from outside the block, so back-face culling can be enabled.
 
 local Blocks = require("src.blocks")
+local Vec3 = require("src.math.vec3")
 
 --- @alias MeshVertex number[] `{ x, y, z, u, v, layer, r, g, b, a }`
+
+--- @class CubeFace
+--- @field normal Vec3 Points out of the block; the neighbor across this face is `block + normal`.
+--- @field texture "top"|"side"|"bottom" Which BlockDef texture layer the face uses.
+--- @field shade number Brightness, faking directional light.
+--- @field corners Vec3[] Offsets from the block's minimum corner.
 
 local Mesher = {}
 
 -- Corners are listed counter-clockwise as seen from outside, starting at the
--- bottom-left of the texture. `shade` fakes directional light.
+-- bottom-left of the texture.
+--- @type CubeFace[]
 local FACES = {
-    { -- +X
-        dx = 1, dy = 0, dz = 0, texture = "side", shade = 0.8,
-        corners = { { 1, 0, 0 }, { 1, 1, 0 }, { 1, 1, 1 }, { 1, 0, 1 } },
+    {
+        normal = Vec3.new(1, 0, 0), texture = "side", shade = 0.8,
+        corners = { Vec3.new(1, 0, 0), Vec3.new(1, 1, 0), Vec3.new(1, 1, 1), Vec3.new(1, 0, 1) },
     },
-    { -- -X
-        dx = -1, dy = 0, dz = 0, texture = "side", shade = 0.8,
-        corners = { { 0, 1, 0 }, { 0, 0, 0 }, { 0, 0, 1 }, { 0, 1, 1 } },
+    {
+        normal = Vec3.new(-1, 0, 0), texture = "side", shade = 0.8,
+        corners = { Vec3.new(0, 1, 0), Vec3.new(0, 0, 0), Vec3.new(0, 0, 1), Vec3.new(0, 1, 1) },
     },
-    { -- +Y
-        dx = 0, dy = 1, dz = 0, texture = "side", shade = 0.65,
-        corners = { { 1, 1, 0 }, { 0, 1, 0 }, { 0, 1, 1 }, { 1, 1, 1 } },
+    {
+        normal = Vec3.new(0, 1, 0), texture = "side", shade = 0.65,
+        corners = { Vec3.new(1, 1, 0), Vec3.new(0, 1, 0), Vec3.new(0, 1, 1), Vec3.new(1, 1, 1) },
     },
-    { -- -Y
-        dx = 0, dy = -1, dz = 0, texture = "side", shade = 0.65,
-        corners = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 0, 1 }, { 0, 0, 1 } },
+    {
+        normal = Vec3.new(0, -1, 0), texture = "side", shade = 0.65,
+        corners = { Vec3.new(0, 0, 0), Vec3.new(1, 0, 0), Vec3.new(1, 0, 1), Vec3.new(0, 0, 1) },
     },
-    { -- +Z (top)
-        dx = 0, dy = 0, dz = 1, texture = "top", shade = 1.0,
-        corners = { { 0, 0, 1 }, { 1, 0, 1 }, { 1, 1, 1 }, { 0, 1, 1 } },
+    {
+        normal = Vec3.new(0, 0, 1), texture = "top", shade = 1.0,
+        corners = { Vec3.new(0, 0, 1), Vec3.new(1, 0, 1), Vec3.new(1, 1, 1), Vec3.new(0, 1, 1) },
     },
-    { -- -Z (bottom)
-        dx = 0, dy = 0, dz = -1, texture = "bottom", shade = 0.5,
-        corners = { { 0, 1, 0 }, { 1, 1, 0 }, { 1, 0, 0 }, { 0, 0, 0 } },
+    {
+        normal = Vec3.new(0, 0, -1), texture = "bottom", shade = 0.5,
+        corners = { Vec3.new(0, 1, 0), Vec3.new(1, 1, 0), Vec3.new(1, 0, 0), Vec3.new(0, 0, 0) },
     },
 }
 
@@ -46,41 +54,42 @@ local CORNER_UV = { { 0, 1 }, { 1, 1 }, { 1, 0 }, { 0, 0 } }
 -- Two triangles per quad, preserving the corner winding.
 local QUAD_ORDER = { 1, 2, 3, 1, 3, 4 }
 
-local function emitFace(vertices, x, y, z, face, layer)
+--- @param vertices MeshVertex[] Appended to.
+--- @param block Vec3
+--- @param face CubeFace
+--- @param layer integer Texture layer.
+local function emitFace(vertices, block, face, layer)
     local shade = face.shade
     for _, cornerIndex in ipairs(QUAD_ORDER) do
-        local corner, uv = face.corners[cornerIndex], CORNER_UV[cornerIndex]
+        local position, uv = block + face.corners[cornerIndex], CORNER_UV[cornerIndex]
         vertices[#vertices + 1] = {
-            x + corner[1], y + corner[2], z + corner[3],
+            position.x, position.y, position.z,
             uv[1], uv[2], layer,
             shade, shade, shade, 1,
         }
     end
 end
 
---- Returns the vertex list for the cube of blocks starting at (x0, y0, z0)
---- with edge length `size`, clipped to the world. May be empty.
+--- Returns the vertex list for the cube of blocks starting at `origin` with
+--- edge length `size`, clipped to the world. May be empty.
 --- @param world World
---- @param x0 integer
---- @param y0 integer
---- @param z0 integer
+--- @param origin Vec3 Minimum corner, in blocks.
 --- @param size integer
 --- @return MeshVertex[]
-function Mesher.buildChunk(world, x0, y0, z0, size)
+function Mesher.buildChunk(world, origin, size)
     local vertices = {}
-    local x1 = math.min(x0 + size, world.size.x) - 1
-    local y1 = math.min(y0 + size, world.size.y) - 1
-    local z1 = math.min(z0 + size, world.size.z) - 1
+    local last = Vec3.fromAxes(function(axis) return math.min(origin[axis] + size, world.size[axis]) - 1 end)
 
-    for z = z0, z1 do
-        for y = y0, y1 do
-            for x = x0, x1 do
-                local id = world:get(x, y, z)
+    for z = origin.z, last.z do
+        for y = origin.y, last.y do
+            for x = origin.x, last.x do
+                local block = Vec3.new(x, y, z)
+                local id = world:get(block)
                 if id ~= Blocks.AIR then
                     local def = Blocks.defs[id]
                     for _, face in ipairs(FACES) do
-                        if not world:isSolid(x + face.dx, y + face.dy, z + face.dz) then
-                            emitFace(vertices, x, y, z, face, def[face.texture])
+                        if not world:isSolid(block + face.normal) then
+                            emitFace(vertices, block, face, def[face.texture])
                         end
                     end
                 end
