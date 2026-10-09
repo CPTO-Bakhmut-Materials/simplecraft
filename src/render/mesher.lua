@@ -2,10 +2,10 @@
 --
 -- Only faces between a solid block and air are emitted. Each vertex is
 -- `{ x, y, z, u, v, layer, shade, shade, shade, 1 }`, matching the mesh
--- format in src/renderer.lua. Triangles are wound counter-clockwise when seen
+-- format in src/render/renderer.lua. Triangles are wound counter-clockwise when seen
 -- from outside the block, so back-face culling can be enabled.
 
-local Blocks = require("src.blocks")
+local Blocks = require("src.world.blocks")
 local Vec3 = require("src.math.vec3")
 
 --- @alias MeshVertex number[] `{ x, y, z, u, v, layer, r, g, b, a }`

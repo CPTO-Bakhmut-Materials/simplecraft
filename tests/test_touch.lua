@@ -1,19 +1,16 @@
 local t = require("tests.lib")
 local Config = require("src.config")
-local Hud = require("src.hud")
-local TouchControls = require("src.input.touch_controls")
+local TouchInput = require("src.input.touch")
 
 local WIDTH, HEIGHT = 1280, 720 -- 720 px is the shorter side, so 72 px of drag is 0.1 unit
 local LOOK_SPEED = Config.touchLookSpeed
 
 local function newControls()
-    local hud = Hud.new()
-    hud:resize(WIDTH, HEIGHT)
-    return TouchControls.new(hud)
+    return TouchInput.new(function() return WIDTH, HEIGHT end)
 end
 
 local function buttonNamed(controls, name)
-    for _, button in ipairs(controls.hud.buttons) do
+    for _, button in ipairs(controls:currentLayout().buttons) do
         if button.name == name then return button end
     end
     error("no button " .. name)
@@ -55,7 +52,7 @@ end)
 t.test("touch: the center of the keys is not a key", function()
     local controls = newControls()
     local forwardKey, backKey = buttonNamed(controls, "forward"), buttonNamed(controls, "back")
-    t.eq(controls.hud:hitTest(forwardKey.x, (forwardKey.y + backKey.y) / 2), nil)
+    t.eq(controls:currentLayout():hitTest(forwardKey.x, (forwardKey.y + backKey.y) / 2), nil)
 end)
 
 t.test("touch: a touch off the buttons looks, in units of the shorter side", function()
@@ -124,4 +121,15 @@ t.test("touch: moves and releases of unknown touches are ignored", function()
     controls:moved("ghost", 10, 10, 5, 5)
     controls:released("ghost")
     t.eq(controls:takeFrame().yaw, 0)
+end)
+
+t.test("touch: the layout follows the screen size", function()
+    local width, height = 1280, 720
+    local controls = TouchInput.new(function() return width, height end)
+    local before = buttonNamed(controls, "place")
+    width, height = 2560, 1440
+    local after = buttonNamed(controls, "place")
+    t.near(after.x, before.x * 2); t.near(after.size, before.size * 2)
+    controls:pressed(1, after.x, after.y)
+    t.eq(controls:takeFrame().actions[1], "place", "touches hit the resized button")
 end)

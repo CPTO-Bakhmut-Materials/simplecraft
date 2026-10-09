@@ -1,5 +1,5 @@
 --- Player input: mouse & keyboard (src/input/mouse_keyboard.lua) or the
---- on-screen touch controls (src/input/touch_controls.lua).
+--- on-screen touch controls (src/input/touch.lua).
 --
 -- Only one input type is used per session. Input.use creates it and registers
 -- the LÖVE callbacks of that type alone, so the other type's events are never
@@ -7,7 +7,7 @@
 -- takeFrame(), and draws its own on-screen controls with draw().
 
 local MouseKeyboard = require("src.input.mouse_keyboard")
-local TouchControls = require("src.input.touch_controls")
+local TouchInput = require("src.input.touch")
 
 --- @alias BlockAction "break"|"place"
 
@@ -24,12 +24,11 @@ local TouchControls = require("src.input.touch_controls")
 local Input = {}
 
 --- Sets up the session's input and registers its LÖVE callbacks.
---- @param hud Hud Layout of the touch controls.
 --- @param touchMode boolean Touch controls instead of mouse & keyboard.
---- @return MouseKeyboard|TouchControls input Call takeFrame() and draw() on it once per frame.
-function Input.use(hud, touchMode)
+--- @return MouseKeyboard|TouchInput input Call takeFrame() and draw() on it once per frame.
+function Input.use(touchMode)
     if touchMode then
-        local touch = TouchControls.new(hud)
+        local touch = TouchInput.new(love.graphics.getDimensions)
         function love.touchpressed(id, x, y) touch:pressed(id, x, y) end
         function love.touchmoved(id, x, y, dx, dy) touch:moved(id, x, y, dx, dy) end
         function love.touchreleased(id) touch:released(id) end

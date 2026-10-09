@@ -2,9 +2,10 @@
 --
 -- Blocks are addressed by integer Vec3 positions with Z pointing up (same as
 -- .vox). Block (x, y, z) occupies the unit cube [x, x+1] x [y, y+1] x [z, z+1].
--- Everything outside the grid reads as air and cannot be modified.
+-- Everything outside the grid reads as air and cannot be modified. Loading a
+-- world from a file is src/world/load.lua.
 
-local Blocks = require("src.blocks")
+local Blocks = require("src.world.blocks")
 
 --- @class World
 --- @field size Extent3 In blocks.
@@ -24,28 +25,6 @@ function World.new(size)
         blocks[i] = AIR
     end
     return setmetatable({ size = size, blocks = blocks }, World)
-end
-
---- Builds a world from a parsed .vox file (see src/vox.lua).
---- Uses the first model; voxel colors are mapped to block types by Blocks.fromColor.
---- @param vox VoxFile
---- @return World
-function World.fromVox(vox)
-    if not vox.palette then
-        error("world file has no color palette (RGBA chunk)", 0)
-    end
-    local model = vox.models[1]
-    local world = World.new(model.size)
-
-    local blockForIndex = {}
-    for index, color in ipairs(vox.palette) do
-        blockForIndex[index] = Blocks.fromColor(color[1], color[2], color[3])
-    end
-
-    for _, voxel in ipairs(model.voxels) do
-        world:set(voxel.position, blockForIndex[voxel.colorIndex] or Blocks.STONE)
-    end
-    return world
 end
 
 --- @param block Vec3 Integer position.

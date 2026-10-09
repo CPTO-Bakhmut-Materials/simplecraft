@@ -1,6 +1,6 @@
 local t = require("tests.lib")
 local Vec3 = require("src.math.vec3")
-local Raycast = require("src.raycast")
+local Raycast = require("src.world.raycast")
 
 -- Centre of block (0, 0, 0), the origin of most test rays.
 local CENTER = Vec3.new(0.5, 0.5, 0.5)

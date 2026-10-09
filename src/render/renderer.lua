@@ -1,7 +1,7 @@
 --- Draws the world as one mesh per chunk, rebuilding chunks when blocks change.
 
-local Blocks = require("src.blocks")
-local Mesher = require("src.mesher")
+local Blocks = require("src.world.blocks")
+local Mesher = require("src.render.mesher")
 local Vec3 = require("src.math.vec3")
 
 --- @class RendererOptions

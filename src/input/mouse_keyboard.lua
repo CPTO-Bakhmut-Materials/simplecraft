@@ -83,7 +83,7 @@ function MouseKeyboard:keypressed(key) -- luacheck: ignore 212/self (a method li
     end
 end
 
---- Mouse & keyboard have nothing on screen besides the HUD's crosshair.
+--- Mouse & keyboard have no on-screen controls (the crosshair is drawn by the game).
 function MouseKeyboard:draw() end -- luacheck: ignore 212/self (same interface as the touch controls)
 
 --- @param focused boolean

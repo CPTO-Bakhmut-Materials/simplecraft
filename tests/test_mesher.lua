@@ -1,9 +1,9 @@
 local t = require("tests.lib")
-local Blocks = require("src.blocks")
+local Blocks = require("src.world.blocks")
 local Extent3 = require("src.math.extent3")
 local Vec3 = require("src.math.vec3")
-local Mesher = require("src.mesher")
-local World = require("src.world")
+local Mesher = require("src.render.mesher")
+local World = require("src.world.world")
 
 local VERTICES_PER_FACE = 6
 

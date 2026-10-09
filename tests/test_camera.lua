@@ -1,5 +1,5 @@
 local t = require("tests.lib")
-local Camera = require("src.camera")
+local Camera = require("src.render.camera")
 local Vec3 = require("src.math.vec3")
 
 local function newCamera(yaw, pitch)

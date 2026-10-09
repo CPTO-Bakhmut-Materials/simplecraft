@@ -85,17 +85,12 @@ every lua-language-server diagnostic enabled in `.luarc.json` is an error, and C
 
 | Path | Purpose |
 |---|---|
-| `main.lua` | Loads the world; wires camera, renderer, input and HUD together |
-| `src/vox.lua` | `.vox` parser |
-| `src/world.lua` | Fixed-size block grid |
-| `src/blocks.lua` | Block types, textures, color mapping |
-| `src/mesher.lua` | Builds chunk meshes with hidden-face culling |
-| `src/renderer.lua` | Shader, array texture, chunk mesh cache |
-| `src/camera.lua` | Free-flying camera |
+| `main.lua` | Command-line parsing; hands LÖVE's frame callbacks to the game |
+| `src/game.lua` | The game: world, camera, renderer and input; breaking and placing blocks |
+| `src/world/` | `world.lua` (block grid), `blocks.lua` (block types, textures, colors), `vox.lua` (`.vox` parser), `load.lua` (`.vox` file → world), `raycast.lua` (block picking) |
+| `src/render/` | `renderer.lua` (shader, array texture, chunk meshes), `mesher.lua` (chunk meshes with hidden-face culling), `camera.lua` (free-flying camera), `crosshair.lua` |
+| `src/input/` | Player input, one type per session: `init.lua` picks it and registers its LÖVE callbacks; `mouse_keyboard.lua` (look, WASD, clicks, Esc, G) or `touch.lua` (move keys, buttons, look drag) with `touch_layout.lua` (button positions) |
 | `src/math/` | `Vec3` (positions, directions), `Extent3` (grid sizes), `Mat4` (matrices) |
-| `src/raycast.lua` | Voxel ray traversal for block picking |
-| `src/input/` | Player input, one type per session: `init.lua` picks it and registers its LÖVE callbacks; `mouse_keyboard.lua` (look, WASD, clicks, Esc, G) or `touch_controls.lua` (direction keys, buttons, look drag) |
-| `src/hud.lua` | Crosshair, touch direction keys and buttons: layout, hit testing, drawing |
 | `src/config.lua` | Tunables and key bindings |
 | `tools/` | Test-world generator, `.vox` writer, web build (`build_web.sh`, `web/index.html`, icons) |
 

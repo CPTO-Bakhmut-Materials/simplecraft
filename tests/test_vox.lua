@@ -1,7 +1,7 @@
 local t = require("tests.lib")
 local Extent3 = require("src.math.extent3")
 local Vec3 = require("src.math.vec3")
-local Vox = require("src.vox")
+local Vox = require("src.world.vox")
 local VoxWriter = require("tools.vox_writer")
 
 local MODEL = {

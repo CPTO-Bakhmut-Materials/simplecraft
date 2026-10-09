@@ -1,5 +1,4 @@
 local t = require("tests.lib")
-local Hud = require("src.hud")
 local Input = require("src.input")
 
 local CALLBACKS = { "touchpressed", "touchmoved", "touchreleased", "mousemoved", "mousepressed", "keypressed", "focus" }
@@ -8,7 +7,10 @@ local CALLBACKS = { "touchpressed", "touchmoved", "touchreleased", "mousemoved",
 --- @param fn fun(fake: table)
 local function withFakeLove(fn)
     local previous = rawget(_G, "love")
-    local fake = { mouse = { setRelativeMode = function() end, getRelativeMode = function() return false end } }
+    local fake = {
+        mouse = { setRelativeMode = function() end, getRelativeMode = function() return false end },
+        graphics = { getDimensions = function() return 1280, 720 end },
+    }
     rawset(_G, "love", fake)
     local ok, err = pcall(fn, fake)
     rawset(_G, "love", previous)
@@ -27,7 +29,7 @@ end
 
 t.test("input: touch mode registers only touch callbacks", function()
     withFakeLove(function(fake)
-        local input = Input.use(Hud.new(), true)
+        local input = Input.use(true)
         t.eq(registered(fake), "touchpressed touchmoved touchreleased")
         t.ok(input.takeFrame ~= nil and input.draw ~= nil)
     end)
@@ -35,7 +37,7 @@ end)
 
 t.test("input: mouse mode registers only mouse, keyboard and focus callbacks", function()
     withFakeLove(function(fake)
-        local input = Input.use(Hud.new(), false)
+        local input = Input.use(false)
         t.eq(registered(fake), "mousemoved mousepressed keypressed focus")
         t.ok(input.takeFrame ~= nil and input.draw ~= nil)
     end)

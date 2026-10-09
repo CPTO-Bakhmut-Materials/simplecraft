@@ -1,7 +1,7 @@
 --- Generates assets/worlds/test.vox: a small hilly island of stone, dirt and grass.
 -- Run from the project root: `luajit tools/make_test_world.lua`
 
-local Blocks = require("src.blocks")
+local Blocks = require("src.world.blocks")
 local Extent3 = require("src.math.extent3")
 local Vec3 = require("src.math.vec3")
 local VoxWriter = require("tools.vox_writer")
