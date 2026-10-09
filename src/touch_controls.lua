@@ -144,6 +144,12 @@ function TouchControls:released(id)
     self.touches[id] = nil
 end
 
+--- Forgets all touches and pending input, e.g. when touch controls are turned off.
+function TouchControls:reset()
+    self.touches, self.actions = {}, {}
+    self.lookX, self.lookY = 0, 0
+end
+
 --- Joystick knob offset from its origin, clamped to the joystick radius.
 --- @param touch TouchState
 --- @return number dx, number dy In pixels.

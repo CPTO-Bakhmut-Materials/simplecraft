@@ -2,7 +2,11 @@
 
 local lib = require("tests.lib")
 
-for _, name in ipairs({ "vec3", "extent3", "mat4", "vox", "world", "mesher", "raycast", "camera", "touch_controls" }) do
+local SUITES = {
+    "vec3", "extent3", "mat4", "vox", "world", "mesher", "raycast", "camera", "touch_controls", "input_toggle",
+}
+
+for _, name in ipairs(SUITES) do
     require("tests.test_" .. name)
 end
 

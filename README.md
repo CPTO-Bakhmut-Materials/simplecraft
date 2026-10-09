@@ -9,7 +9,6 @@ Fly around a pre-built world, break blocks and place dirt. See [design.md](desig
 love .                         # loads assets/worlds/test.vox
 love . /path/to/world.vox      # loads any MagicaVoxel file
 love . --touch                 # starts with the on-screen touch controls
-love . --force-touch           # touch controls only; the left mouse button acts as a finger
 ```
 
 | Input | Action |
@@ -20,12 +19,14 @@ love . --force-touch           # touch controls only; the left mouse button acts
 | Left Ctrl (hold) | Move faster |
 | Left click | Break block |
 | Right click | Place dirt |
+| Tab | Switch to touch controls |
 | Esc | Quit |
 
-On touch screens, on-screen controls appear automatically. They show from the start on Android, iOS, and phones or tablets
-in a browser, and otherwise appear on the first touch. A mouse click switches back.
-To force them on any device, use `--force-touch`, or add `?touch` to the web build's URL
-(e.g. `http://localhost:8000/?touch`). The left mouse button then acts as a finger and the controls stay on.
+There are two control modes: mouse & keyboard, and on-screen touch controls. The game starts in touch mode on
+Android, iOS, phones and tablets in a browser, or with `--touch`; otherwise in mouse & keyboard mode. It never
+switches by itself: use the toggle button in the top-right corner (mouse icon | phone icon) or Tab. While the mouse
+is captured, release it first (Esc in a browser) to click the button. In touch mode the left mouse button acts as a
+finger.
 
 | Touch | Action |
 |---|---|
@@ -33,6 +34,7 @@ To force them on any device, use `--force-touch`, or add `?touch` to the web bui
 | Drag on the right half | Look around |
 | Up / Down (hold) | Fly up / down |
 | Break / Place (tap) | Break block / place dirt at the crosshair |
+| Top-right toggle (tap) | Switch to mouse & keyboard |
 
 Edits live in memory only; the world file is never written.
 
@@ -96,6 +98,7 @@ every lua-language-server diagnostic enabled in `.luarc.json` is an error, and C
 | `src/math/` | `Vec3` (positions, directions), `Extent3` (grid sizes), `Mat4` (matrices) |
 | `src/raycast.lua` | Voxel ray traversal for block picking |
 | `src/touch_controls.lua` | On-screen joystick, look area and buttons for touch screens |
+| `src/input_toggle.lua` | Top-right button switching between mouse/keyboard and touch controls |
 | `src/config.lua` | Tunables and key bindings |
 | `tools/` | Test-world generator, `.vox` writer, web build (`build_web.sh`, `web/index.html`) |
 

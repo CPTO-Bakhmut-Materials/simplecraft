@@ -73,26 +73,24 @@
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
   </main>
   <div id="status">Downloading…</div>
-  <div id="hint">Click to capture the mouse · WASD + Space/Shift to fly · Left click break · Right click place · Esc releases the mouse</div>
+  <div id="hint">Click to capture the mouse · WASD + Space/Shift to fly · Left click break · Right click place · Esc releases the mouse · Tab or the top-right button: touch controls</div>
   <div id="rotate">Rotate your device to landscape</div>
 
   <script>
     var statusElement = document.getElementById("status");
     var canvas = document.getElementById("canvas");
     // Touch-first devices (phones, tablets) start with the on-screen controls.
-    // Touch laptops report a fine primary pointer and get them on first touch.
-    // Adding ?touch to the URL forces them on any device, with the mouse acting
-    // as a finger.
-    var forceTouch = new URLSearchParams(window.location.search).has("touch");
-    var touchDevice = forceTouch || window.matchMedia("(pointer: coarse)").matches;
-    if (touchDevice) {
+    // The button in the top-right corner switches between touch and
+    // mouse/keyboard controls on any device.
+    var startWithTouch = window.matchMedia("(pointer: coarse)").matches;
+    if (startWithTouch) {
       document.getElementById("hint").textContent =
-        "Left side: move · Right side: look · Buttons: fly up/down, break, place";
+        "Left side: move · Right side: look · Buttons: fly up/down, break, place · Top-right: mouse & keyboard";
     }
 
-    // Keep keys the game uses from scrolling the page.
+    // Keep keys the game uses from scrolling the page or moving focus (Tab).
     window.addEventListener("keydown", function (e) {
-      if ([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) !== -1) {
+      if ([" ", "Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) !== -1) {
         e.preventDefault();
       }
     });
@@ -105,7 +103,7 @@
     });
 
     var Module = {
-      arguments: ["./game.love"].concat(forceTouch ? ["--force-touch"] : touchDevice ? ["--touch"] : []),
+      arguments: startWithTouch ? ["./game.love", "--touch"] : ["./game.love"],
       INITIAL_MEMORY: {{memory}},
       canvas: canvas,
       printErr: console.error.bind(console),

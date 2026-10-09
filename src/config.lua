@@ -20,6 +20,7 @@ return {
         forward = "w", back = "s", left = "a", right = "d",
         up = "space", down = "lshift", fast = "lctrl",
         quit = "escape",
+        toggleInput = "tab", -- same as the button in the top-right corner
     },
     mouseButtons = { breakBlock = 1, placeBlock = 2 },
 }
