@@ -3,7 +3,7 @@
 local lib = require("tests.lib")
 
 local SUITES = {
-    "vec3", "extent3", "mat4", "vox", "world", "mesher", "raycast", "camera", "touch_controls", "input_toggle",
+    "vec3", "extent3", "mat4", "vox", "world", "mesher", "raycast", "camera", "hud", "touch_controls", "input",
 }
 
 for _, name in ipairs(SUITES) do

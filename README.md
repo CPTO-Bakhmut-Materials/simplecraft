@@ -88,7 +88,7 @@ every lua-language-server diagnostic enabled in `.luarc.json` is an error, and C
 
 | Path | Purpose |
 |---|---|
-| `main.lua` | Wires everything together; input handling |
+| `main.lua` | Loads the world; wires camera, renderer, input and HUD together |
 | `src/vox.lua` | `.vox` parser |
 | `src/world.lua` | Fixed-size block grid |
 | `src/blocks.lua` | Block types, textures, color mapping |
@@ -97,8 +97,9 @@ every lua-language-server diagnostic enabled in `.luarc.json` is an error, and C
 | `src/camera.lua` | Free-flying camera |
 | `src/math/` | `Vec3` (positions, directions), `Extent3` (grid sizes), `Mat4` (matrices) |
 | `src/raycast.lua` | Voxel ray traversal for block picking |
-| `src/touch_controls.lua` | On-screen joystick, look area and buttons for touch screens |
-| `src/input_toggle.lua` | Top-right button switching between mouse/keyboard and touch controls |
+| `src/input.lua` | Input modes (mouse & keyboard or touch); turns LÖVE events into per-frame movement, look and actions |
+| `src/touch_controls.lua` | Touch gestures: floating joystick, look drag, held buttons |
+| `src/hud.lua` | Crosshair, mode toggle, touch joystick and buttons: layout, hit testing, drawing |
 | `src/config.lua` | Tunables and key bindings |
 | `tools/` | Test-world generator, `.vox` writer, web build (`build_web.sh`, `web/index.html`, icons) |
 

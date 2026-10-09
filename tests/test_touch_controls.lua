@@ -1,16 +1,17 @@
 local t = require("tests.lib")
+local Hud = require("src.hud")
 local TouchControls = require("src.touch_controls")
 
 local WIDTH, HEIGHT = 1280, 720
 
 local function newControls()
-    local controls = TouchControls.new()
-    controls:resize(WIDTH, HEIGHT)
-    return controls
+    local hud = Hud.new()
+    hud:resize(WIDTH, HEIGHT)
+    return TouchControls.new(hud)
 end
 
 local function buttonNamed(controls, name)
-    for _, button in ipairs(controls.buttons) do
+    for _, button in ipairs(controls.hud.buttons) do
         if button.name == name then return button end
     end
     error("no button " .. name)
@@ -27,7 +28,7 @@ end)
 
 t.test("touch: left half is a joystick centered where the touch lands", function()
     local controls = newControls()
-    local radius = controls.joystickRadius
+    local radius = controls.hud.joystickRadius
     controls:pressed("a", 300, 400)
     controls:moved("a", 300, 400 - radius / 2, 0, -radius / 2) -- push up: half forward
     local forward, right = controls:movement()
@@ -98,7 +99,7 @@ end)
 
 t.test("touch: joystick and look work at the same time", function()
     local controls = newControls()
-    local radius = controls.joystickRadius
+    local radius = controls.hud.joystickRadius
     controls:pressed("move", 200, 500)
     controls:pressed("look", 1000, 200)
     controls:moved("move", 200, 500 - radius, 0, -radius)
@@ -111,16 +112,25 @@ t.test("touch: joystick and look work at the same time", function()
     t.eq(forward, 0, "joystick released")
 end)
 
-t.test("touch: layout scales with the screen and stays on it", function()
+t.test("touch: the toggle is not a touch button", function()
     local controls = newControls()
-    local small = controls.joystickRadius
-    controls:resize(WIDTH * 2, HEIGHT * 2)
-    t.near(controls.joystickRadius, small * 2)
-    for _, button in ipairs(controls.buttons) do
-        t.ok(button.x + button.radius <= WIDTH * 2 and button.y + button.radius <= HEIGHT * 2,
-            button.name .. " inside the screen")
-        t.ok(button.x > WIDTH, button.name .. " on the right half")
-    end
+    local toggle = controls.hud.toggle
+    controls:pressed(1, toggle.x + toggle.width / 2, toggle.y + toggle.height / 2)
+    controls:moved(1, toggle.x, toggle.y + 50, -toggle.width / 2, 50)
+    t.eq(#controls:takeActions(), 0)
+    local dx = controls:takeLook()
+    t.ok(dx ~= 0, "a touch there drags the view; Input handles the toggle before it gets here")
+end)
+
+t.test("touch: joystick reports its center and clamped knob", function()
+    local controls = newControls()
+    local radius = controls.hud.joystickRadius
+    t.eq(controls:joystick(), nil, "idle")
+    controls:pressed("a", 300, 400)
+    controls:moved("a", 300 + radius * 2, 400, radius * 2, 0)
+    local joystick = assert(controls:joystick(), "held")
+    t.eq(joystick.baseX, 300); t.eq(joystick.baseY, 400)
+    t.near(joystick.knobX, 300 + radius); t.near(joystick.knobY, 400)
 end)
 
 t.test("touch: moves and releases of unknown touches are ignored", function()

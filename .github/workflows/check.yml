@@ -1,11 +1,27 @@
-# Type-checks the Lua sources with lua-language-server (tools/check_types.sh).
+# Unit tests, lint (luacheck) and type check (lua-language-server, tools/check_types.sh).
+# Runs on every push and pull request, and before each deploy (pages.yml calls it).
 name: Check
 
 on:
   push:
   pull_request:
+  workflow_call:
 
 jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y luajit
+      - run: luajit tests/run.lua
+
+  luacheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y lua-check
+      - run: luacheck .
+
   luals:
     runs-on: ubuntu-latest
     env:

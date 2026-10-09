@@ -1,4 +1,5 @@
-# Builds the browser version (tools/build_web.sh) and publishes it to GitHub Pages.
+# Builds the browser version (tools/build_web.sh) and publishes it to GitHub Pages,
+# only if the checks in check.yml pass.
 # One-time setup: repository Settings → Pages → Source: "GitHub Actions".
 name: Deploy web build
 
@@ -17,7 +18,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  checks:
+    uses: ./.github/workflows/check.yml
+
   build:
+    needs: checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
