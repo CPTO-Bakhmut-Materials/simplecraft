@@ -27,6 +27,7 @@ rm -rf "$out"
 npx --yes --allow-git=root "$LOVEJS_PACKAGE" -c -t "love-mcraft" -m "$MEMORY_BYTES" "$staging/game.love" "$out"
 sed "s/{{memory}}/$MEMORY_BYTES/" "$root/tools/web/index.html" > "$out/index.html"
 rm -rf "$out/theme" # styles for the stock page replaced above
+cp "$root/tools/web/favicon.png" "$root/tools/web/apple-touch-icon.png" "$out/"
 touch "$out/.nojekyll"
 
 echo "Built $out — test locally with: python3 -m http.server -d '$out'"

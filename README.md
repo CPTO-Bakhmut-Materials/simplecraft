@@ -100,9 +100,9 @@ every lua-language-server diagnostic enabled in `.luarc.json` is an error, and C
 | `src/touch_controls.lua` | On-screen joystick, look area and buttons for touch screens |
 | `src/input_toggle.lua` | Top-right button switching between mouse/keyboard and touch controls |
 | `src/config.lua` | Tunables and key bindings |
-| `tools/` | Test-world generator, `.vox` writer, web build (`build_web.sh`, `web/index.html`) |
+| `tools/` | Test-world generator, `.vox` writer, web build (`build_web.sh`, `web/index.html`, icons) |
 
 ## Credits
 
 Block textures: [Kenney Voxel Pack](https://kenney.nl/assets/voxel-pack), CC0 — see
-`assets/textures/LICENSE-kenney.txt`.
+`assets/textures/LICENSE-kenney.txt`. The web favicon is rendered from the same textures.
