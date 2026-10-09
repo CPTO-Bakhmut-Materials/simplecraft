@@ -1,0 +1,84 @@
+# love-mcraft
+
+A deliberately small Minecraft-like voxel sandbox for [LÖVE](https://love2d.org) 11.5.
+Fly around a pre-built world, break blocks and place dirt. See [design.md](design.md) for scope.
+
+## Run
+
+```sh
+love .                         # loads assets/worlds/test.vox
+love . /path/to/world.vox      # loads any MagicaVoxel file
+```
+
+| Input | Action |
+|---|---|
+| Mouse | Look around |
+| W A S D | Fly forward / left / back / right |
+| Space / Left Shift | Up / down |
+| Left Ctrl (hold) | Move faster |
+| Left click | Break block |
+| Right click | Place dirt |
+| Esc | Quit |
+
+Edits live in memory only; the world file is never written.
+
+## Web build
+
+The game also runs in the browser via [love.js](https://github.com/Davidobot/love.js) (LÖVE 11.4 compiled to WebAssembly):
+
+```sh
+tools/build_web.sh                     # writes a static site to build/web (needs node + zip)
+python3 -m http.server -d build/web    # then open http://localhost:8000
+```
+
+To host it on GitHub Pages, push to `main` and set **Settings → Pages → Source** to **GitHub Actions**;
+`.github/workflows/pages.yml` builds and deploys it. Alternatively, upload the contents of `build/web` to any static host.
+
+Browser differences: WebGL 1 has no array textures, so the renderer falls back to a texture atlas;
+Esc releases the mouse instead of quitting; worlds can only be loaded from the bundled `assets/`.
+
+## Editing the world
+
+Worlds are [MagicaVoxel `.vox`](https://github.com/ephtracy/voxel-model/blob/master/MagicaVoxel-file-format-vox.txt)
+files. Edit them with [Goxel](https://goxel.xyz) (open source) or MagicaVoxel. Z is up.
+
+In Goxel, `.vox` is an import/export format, not a native one:
+
+- Open: `goxel assets/worlds/test.vox`, or **File → Import → MagicaVoxel (.vox)**
+- Save: **File → Export → MagicaVoxel (.vox)** (plain *Save* writes Goxel's own `.gox` format)
+
+Block types come from voxel **colors**: each voxel becomes the block with the nearest reference color.
+
+| Block | Paint with RGB |
+|---|---|
+| Stone | 125, 125, 125 |
+| Dirt | 121, 85, 58 |
+| Grass | 95, 159, 53 |
+
+Only the first model in the file is loaded, and it must fit in 256×256×256.
+To regenerate the bundled test world: `luajit tools/make_test_world.lua`.
+
+## Development
+
+```sh
+luajit tests/run.lua    # unit tests (pure Lua, no LÖVE needed)
+luacheck .              # lint, if luacheck is installed
+```
+
+| Path | Purpose |
+|---|---|
+| `main.lua` | Wires everything together; input handling |
+| `src/vox.lua` | `.vox` parser |
+| `src/world.lua` | Fixed-size block grid |
+| `src/blocks.lua` | Block types, textures, color mapping |
+| `src/mesher.lua` | Builds chunk meshes with hidden-face culling |
+| `src/renderer.lua` | Shader, array texture, chunk mesh cache |
+| `src/camera.lua`, `src/mat4.lua` | Free camera and matrix math |
+| `src/raycast.lua` | Voxel ray traversal for block picking |
+| `src/config.lua` | Tunables and key bindings |
+| `tools/` | Test-world generator, `.vox` writer, web build (`build_web.sh`, `web/index.html`) |
+
+## Credits
+
+Block textures: [Kenney Voxel Pack](https://kenney.nl/assets/voxel-pack), CC0 — see
+`assets/textures/LICENSE-kenney.txt`.
